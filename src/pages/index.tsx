@@ -353,8 +353,12 @@ const DutyRosterApp: React.FC = () => {
     <>
       <Head>
         <title>Sistem Pengurusan Jadual Bertugas Guru SKTKP</title>
+        <meta
+          content="Penjana jadual bertugas untuk guru-guru SK Taman Koperasi Polis"
+          name="description"
+        />
       </Head>
-      <div className="min-h-screen relative">
+      <div className="min-h-screen relative pb-4">
         <div className="fixed inset-0 z-0">
           <img
             src="/sktkp-bg.jpg"
@@ -520,34 +524,23 @@ const DutyRosterApp: React.FC = () => {
                 <CardTitle className="text-lg md:text-xl">
                   {`Jadual Bertugas Minggu ${minggu} - Kumpulan ${kumpulan}`}
                 </CardTitle>
-                <div className="flex gap-2">
+
+                <div className="flex flex-col md:flex-row lg:flex-row  gap-2 pt-2">
                   <Button
-                    onClick={handleReset}
                     variant="destructive"
-                    size="sm"
-                    className="text-sm md:text-base"
+                    className="rounded-full px-6"
+                    onClick={handleReset}
                   >
                     Reset
                   </Button>
                   <Button
-                    onClick={handleCopy}
                     variant="outline"
-                    size="sm"
-                    className="text-sm md:text-base flex items-center gap-2"
+                    className="rounded-full px-6 flex items-center gap-2"
+                    onClick={handleCopy}
                   >
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        <span>Disalin!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        <span>Salin Mesej</span>
-                      </>
-                    )}
+                    <Copy className="h-4 w-4" />
+                    Salin Mesej
                   </Button>
-
                   <DownloadTableImage />
                 </div>
               </div>
@@ -640,37 +633,19 @@ const DutyRosterApp: React.FC = () => {
           </Card>
 
           {/* Support me by keeping this in the footer, please. :) */}
-          <div className="mx-auto place-items-center pt-12">
-            <div className="text-black p-4 rounded-xl flex font-mono">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                className="lucide lucide-chevrons-left-right-ellipsis mr-2"
-              >
-                <path d="m18 8 4 4-4 4" />
-                <path d="m6 8-4 4 4 4" />
-                <path d="M8 12h.01" />
-                <path d="M12 12h.01" />
-                <path d="M16 12h.01" />
-              </svg>
-              Dibina oleh
+          <footer className="fixed bottom-0 left-0 right-0 p-2 bg-white/80 backdrop-blur-sm">
+            <div className="container mx-auto flex justify-center items-center gap-2 text-sm text-gray-600">
+              <span>Dibina oleh</span>
               <div className="inline-block transform hover:scale-110 hover:-rotate-3 transition duration-300">
                 <Link
                   href="https://fvtrx.com"
-                  className="hover:bg-white rounded-md px-2 py-1 font-bold  hover:text-black cursor-pointer"
+                  className="hover:bg-black rounded-md px-2 py-1 font-bold  hover:text-white cursor-pointer"
                 >
                   Abdullah Fitri &copy; FVTRX.
                 </Link>
               </div>
             </div>
-          </div>
+          </footer>
         </div>
       </div>
     </>
