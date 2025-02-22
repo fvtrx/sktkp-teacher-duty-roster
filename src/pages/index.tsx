@@ -528,14 +528,16 @@ const DutyRosterApp: React.FC = () => {
                 <div className="flex flex-col md:flex-row lg:flex-row  gap-2 pt-2">
                   <Button
                     variant="destructive"
-                    className="rounded-full px-6"
+                    className="rounded-md text-sm md:text-base px-6"
+                    size="sm"
                     onClick={handleReset}
                   >
                     Reset
                   </Button>
                   <Button
                     variant="outline"
-                    className="rounded-full px-6 flex items-center gap-2"
+                    className="rounded-md text-sm md:text-base px-6 flex items-center gap-2"
+                    size="sm"
                     onClick={handleCopy}
                   >
                     <Copy className="h-4 w-4" />
