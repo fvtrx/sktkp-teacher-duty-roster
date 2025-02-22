@@ -1,4 +1,3 @@
-import { Toaster } from "@src/components/ui/sonner";
 import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {

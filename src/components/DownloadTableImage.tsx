@@ -6,7 +6,12 @@ declare global {
   interface Window {
     html2canvas: (
       element: HTMLElement,
-      options: any
+      options: {
+        backgroundColor: string;
+        scale: number;
+        useCORS: boolean;
+        logging: boolean;
+      }
     ) => Promise<HTMLCanvasElement>;
   }
 }
