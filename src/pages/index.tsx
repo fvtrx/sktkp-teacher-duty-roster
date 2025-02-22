@@ -540,8 +540,17 @@ const DutyRosterApp: React.FC = () => {
                     size="sm"
                     onClick={handleCopy}
                   >
-                    <Copy className="h-4 w-4" />
-                    Salin Mesej
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <span>Disalin!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span>Salin Mesej</span>
+                      </>
+                    )}
                   </Button>
                   <DownloadTableImage />
                 </div>
