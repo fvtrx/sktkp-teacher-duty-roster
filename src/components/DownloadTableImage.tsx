@@ -154,7 +154,7 @@ const DownloadTableImage: React.FC = () => {
       const link = document.createElement("a");
       const date = new Date().toISOString().split("T")[0];
       link.href = url;
-      link.download = `jadual-bertugas-${date}.png`;
+      link.download = `jadual-bertugas-guru-sktkp-${date}.png`;
       document.body.appendChild(link);
       link.click();
 
