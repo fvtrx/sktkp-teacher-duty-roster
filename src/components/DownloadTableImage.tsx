@@ -85,26 +85,46 @@ const DownloadTableImage: React.FC = () => {
           `;
         });
 
-        // Style time column headers (PAGI, REHAT, PULANG)
-        const timeHeaders = tableElement.querySelectorAll("td[rowspan]");
-        timeHeaders.forEach((header) => {
-          (header as HTMLElement).style.cssText = `
-            padding: 12px;
-            border: 1px solid #000000;
-            background-color: #FFFFFF;
-            color: #000000;
-            font-weight: bold;
-            width: 120px;
-            font-family: Arial, sans-serif;
-          `;
+        // First fix the section headers (PAGI, REHAT, PULANG)
+        const sections = ["PAGI", "REHAT", "PULANG", "BUKU LAPORAN"];
+        sections.forEach((section) => {
+          const sectionCell = tableElement.querySelector(
+            `td[rowspan]:has(span:contains("${section}"))`
+          ) as HTMLElement;
+          if (sectionCell) {
+            sectionCell.style.cssText = `
+              padding: 12px;
+              border: 1px solid #000000;
+              background-color: #FFFFFF;
+              color: #000000;
+              font-weight: bold;
+              width: 120px;
+              font-family: Arial, sans-serif;
+              vertical-align: middle;
+              display: table-cell;
+              visibility: visible;
+            `;
+            // Make the emoji and text visible
+            const emojiSpan = sectionCell.querySelector("span") as HTMLElement;
+            if (emojiSpan) {
+              emojiSpan.style.cssText = `
+                display: inline;
+                visibility: visible;
+              `;
+            }
+          }
         });
 
-        // Style alternating rows
+        // Style alternating rows but preserve section header background
         const rows = tableElement.querySelectorAll("tr");
         rows.forEach((row, index) => {
           if (index > 0) {
             // Skip header row
-            row.style.backgroundColor = index % 2 === 0 ? "#FFFFFF" : "#F9FAFB";
+            const cells = row.querySelectorAll("td:not([rowspan])");
+            cells.forEach((cell) => {
+              (cell as HTMLElement).style.backgroundColor =
+                index % 2 === 0 ? "#FFFFFF" : "#F9FAFB";
+            });
           }
         });
       }
@@ -121,7 +141,7 @@ const DownloadTableImage: React.FC = () => {
         });
       }
 
-      // Convert to canvas
+      // Convert to canvas with specific settings for better text rendering
       const canvas = await window.html2canvas(clone, {
         backgroundColor: "#ffffff",
         scale: 2,
@@ -135,11 +155,18 @@ const DownloadTableImage: React.FC = () => {
           ) as HTMLElement;
           if (clonedElement) {
             clonedElement.style.transform = "none";
+            // Ensure all text is rendered
+            const allText = clonedElement.querySelectorAll("td, th, span");
+            allText.forEach((element) => {
+              (element as HTMLElement).style.visibility = "visible";
+              (element as HTMLElement).style.display =
+                element.tagName === "SPAN" ? "inline" : "table-cell";
+            });
           }
         },
       });
 
-      // Convert to blob
+      // Convert to blob with maximum quality
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(
           (b) => {
@@ -148,7 +175,7 @@ const DownloadTableImage: React.FC = () => {
           },
           "image/png",
           1.0
-        ); // Maximum quality
+        );
       });
 
       // Download
