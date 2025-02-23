@@ -85,34 +85,18 @@ const DownloadTableImage: React.FC = () => {
           `;
         });
 
-        // First fix the section headers (PAGI, REHAT, PULANG)
-        const sections = ["PAGI", "REHAT", "PULANG", "BUKU LAPORAN"];
-        sections.forEach((section) => {
-          const sectionCell = tableElement.querySelector(
-            `td[rowspan]:has(span:contains("${section}"))`
-          ) as HTMLElement;
-          if (sectionCell) {
-            sectionCell.style.cssText = `
-              padding: 12px;
-              border: 1px solid #000000;
-              background-color: #FFFFFF;
-              color: #000000;
-              font-weight: bold;
-              width: 120px;
-              font-family: Arial, sans-serif;
-              vertical-align: middle;
-              display: table-cell;
-              visibility: visible;
-            `;
-            // Make the emoji and text visible
-            const emojiSpan = sectionCell.querySelector("span") as HTMLElement;
-            if (emojiSpan) {
-              emojiSpan.style.cssText = `
-                display: inline;
-                visibility: visible;
-              `;
-            }
-          }
+        // Style time column headers (PAGI, REHAT, PULANG)
+        const timeHeaders = tableElement.querySelectorAll("td[rowspan]");
+        timeHeaders.forEach((header) => {
+          (header as HTMLElement).style.cssText = `
+            padding: 12px;
+            border: 1px solid #000000;
+            background-color: #FFFFFF;
+            color: #000000;
+            font-weight: bold;
+            width: 120px;
+            font-family: Arial, sans-serif;
+          `;
         });
 
         // Style alternating rows
@@ -151,13 +135,6 @@ const DownloadTableImage: React.FC = () => {
           ) as HTMLElement;
           if (clonedElement) {
             clonedElement.style.transform = "none";
-            // Ensure all text is rendered
-            const allText = clonedElement.querySelectorAll("td, th, span");
-            allText.forEach((element) => {
-              (element as HTMLElement).style.visibility = "visible";
-              (element as HTMLElement).style.display =
-                element.tagName === "SPAN" ? "inline" : "table-cell";
-            });
           }
         },
       });
