@@ -90,8 +90,6 @@ const DownloadTableImage: React.FC = () => {
         timeHeaders.forEach((header) => {
           (header as HTMLElement).style.cssText = `
             padding: 12px;
-            border: 1px solid #000000;
-            background-color: #FFFFFF;
             color: #000000;
             font-weight: bold;
             width: 120px;
