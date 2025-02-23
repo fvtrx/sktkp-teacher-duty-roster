@@ -115,16 +115,12 @@ const DownloadTableImage: React.FC = () => {
           }
         });
 
-        // Style alternating rows but preserve section header background
+        // Style alternating rows
         const rows = tableElement.querySelectorAll("tr");
         rows.forEach((row, index) => {
           if (index > 0) {
             // Skip header row
-            const cells = row.querySelectorAll("td:not([rowspan])");
-            cells.forEach((cell) => {
-              (cell as HTMLElement).style.backgroundColor =
-                index % 2 === 0 ? "#FFFFFF" : "#F9FAFB";
-            });
+            row.style.backgroundColor = index % 2 === 0 ? "#FFFFFF" : "#F9FAFB";
           }
         });
       }
@@ -141,7 +137,7 @@ const DownloadTableImage: React.FC = () => {
         });
       }
 
-      // Convert to canvas with specific settings for better text rendering
+      // Convert to canvas
       const canvas = await window.html2canvas(clone, {
         backgroundColor: "#ffffff",
         scale: 2,
@@ -166,7 +162,7 @@ const DownloadTableImage: React.FC = () => {
         },
       });
 
-      // Convert to blob with maximum quality
+      // Convert to blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(
           (b) => {
@@ -175,7 +171,7 @@ const DownloadTableImage: React.FC = () => {
           },
           "image/png",
           1.0
-        );
+        ); // Maximum quality
       });
 
       // Download
