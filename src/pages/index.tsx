@@ -1,3 +1,11 @@
+import type {
+  DutyStation,
+  DutyStations,
+  FormErrors,
+  DayName,
+  DualTeacherStation,
+} from "@src/types";
+
 import React, { useState } from "react";
 import {
   Card,
@@ -20,65 +28,7 @@ import Head from "next/head";
 import DownloadTableImage from "@src/components/DownloadTableImage";
 import Footer from "@src/components/common/Footer";
 import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
-
-const dayNames = [
-  "Ahad",
-  "Isnin",
-  "Selasa",
-  "Rabu",
-  "Khamis",
-  "Jumaat",
-  "Sabtu",
-] as const;
-
-type DayName = (typeof dayNames)[number];
-
-const months = [
-  "Jan",
-  "Feb",
-  "Mac",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Ogo",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Dis",
-] as const;
-
-interface SingleTeacherStation {
-  id: string;
-  label: string;
-  selected: string;
-  type: "single";
-}
-
-interface DualTeacherStation {
-  id: string;
-  label: string;
-  selected: string[];
-  type: "dual";
-}
-
-type DutyStation = SingleTeacherStation | DualTeacherStation;
-
-export interface DutyStations {
-  pagi: DualTeacherStation[];
-  rehat: DualTeacherStation[];
-  pulang: (SingleTeacherStation | DualTeacherStation)[];
-}
-
-interface FormErrors {
-  kumpulan: boolean;
-  minggu: boolean;
-  reportTeacher: boolean;
-  stations: {
-    [key: string]: boolean | boolean[];
-  };
-  showErrors: boolean;
-}
+import { dayNames, months } from "@src/lib/constant";
 
 const DutyRosterApp: React.FC = () => {
   const today = new Date();
@@ -144,9 +94,9 @@ const DutyRosterApp: React.FC = () => {
       },
       {
         id: "siarayaPulang",
-        label: "Siaraya Tahap 1 & 2",
-        selected: "",
-        type: "single",
+        label: "Siaraya Pulang",
+        selected: ["", ""],
+        type: "dual",
       },
     ],
   };
@@ -877,7 +827,7 @@ const DutyRosterApp: React.FC = () => {
                 </>
               )}
 
-              <div className="pt-8 place-items-center md:place-items-center lg:place-items-end">
+              <div className="pt-8 place-items-start md:place-items-center lg:place-items-end">
                 <Button
                   variant="outline"
                   className="rounded-md text-sm md:text-base px-6 flex items-center gap-2"
@@ -973,14 +923,16 @@ const DutyRosterApp: React.FC = () => {
                   <table className="min-w-full bg-white table-fixed">
                     <colgroup>
                       <col style={{ width: "15%" }} /> {/* Waktu column */}
-                      <col style={{ width: "35%" }} /> {/* Lokasi column */}
+                      <col style={{ width: "35%" }} /> {/* Tugasan column */}
                       <col style={{ width: "50%" }} />{" "}
                       {/* Guru Bertugas column */}
                     </colgroup>
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="border px-4 py-2 text-left">Waktu</th>
-                        <th className="border px-4 py-2 text-left">Lokasi</th>
+                        <th className="border px-4 py-2 text-left">
+                          Waktu/Buku Laporan
+                        </th>
+                        <th className="border px-4 py-2 text-left">Tugasan</th>
                         <th className="border px-4 py-2 text-left">
                           Guru Bertugas
                         </th>
