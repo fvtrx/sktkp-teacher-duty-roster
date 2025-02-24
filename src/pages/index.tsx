@@ -179,7 +179,7 @@ const DutyRosterApp: React.FC = () => {
     };
 
     // Validate all duty stations
-    Object.entries(rosterData).forEach(([section, stations]) => {
+    Object.entries(rosterData).forEach(([_section, stations]) => {
       stations.forEach((station: DutyStation) => {
         if (station.type === "dual") {
           // Check if both teachers are selected for dual stations

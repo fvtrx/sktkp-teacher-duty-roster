@@ -22,26 +22,26 @@ export const teacherService = {
     return response.data;
   },
 
-  /**
-   * Create a new teacher (placeholder for future expansion)
-   * @param teacherData Teacher data
-   * @returns Promise with created teacher
-   */
-  createTeacher: async (teacherData: any) => {
-    const response = await api.post("/api/senarai-guru", teacherData);
-    return response.data;
-  },
+  // /**
+  //  * Create a new teacher (placeholder for future expansion)
+  //  * @param teacherData Teacher data
+  //  * @returns Promise with created teacher
+  //  */
+  // createTeacher: async (teacherData) => {
+  //   const response = await api.post("/api/senarai-guru", teacherData);
+  //   return response.data;
+  // },
 
-  /**
-   * Update a teacher (placeholder for future expansion)
-   * @param id Teacher ID
-   * @param teacherData Teacher data to update
-   * @returns Promise with updated teacher
-   */
-  updateTeacher: async (id: string, teacherData: any) => {
-    const response = await api.put(`/api/senarai-guru/${id}`, teacherData);
-    return response.data;
-  },
+  // /**
+  //  * Update a teacher (placeholder for future expansion)
+  //  * @param id Teacher ID
+  //  * @param teacherData Teacher data to update
+  //  * @returns Promise with updated teacher
+  //  */
+  // updateTeacher: async (id: string, teacherData) => {
+  //   const response = await api.put(`/api/senarai-guru/${id}`, teacherData);
+  //   return response.data;
+  // },
 
   /**
    * Delete a teacher (placeholder for future expansion)
