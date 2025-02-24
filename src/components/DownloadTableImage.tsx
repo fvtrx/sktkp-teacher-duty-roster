@@ -19,7 +19,9 @@ declare global {
   }
 }
 
-const DownloadTableImage: React.FC = () => {
+const DownloadTableImage: React.FC<{ isFormEmpty: boolean }> = ({
+  isFormEmpty,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDownload = async () => {
@@ -85,25 +87,36 @@ const DownloadTableImage: React.FC = () => {
           `;
         });
 
-        // Style time column headers (PAGI, REHAT, PULANG)
+        // Enhanced styling for the time column headers (PAGI, REHAT, PULANG)
         const timeHeaders = tableElement.querySelectorAll("td[rowspan]");
         timeHeaders.forEach((header) => {
           (header as HTMLElement).style.cssText = `
             padding: 12px;
+            border: 1px solid #000000;
             color: #000000;
             font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            background-color: #f9f9f9;
             width: 120px;
             font-family: Arial, sans-serif;
           `;
         });
 
-        // Style alternating rows
+        // Style alternating rows and ensure row labels are visible
         const rows = tableElement.querySelectorAll("tr");
         rows.forEach((row, index) => {
           if (index > 0) {
             // Skip header row
             row.style.backgroundColor = index % 2 === 0 ? "#FFFFFF" : "#F9FAFB";
           }
+        });
+
+        // Ensure the emoji icons are visible in the waktu column
+        const emojiCells = tableElement.querySelectorAll("td.font-semibold");
+        emojiCells.forEach((cell) => {
+          (cell as HTMLElement).style.display = "table-cell";
+          (cell as HTMLElement).style.visibility = "visible";
         });
       }
 
@@ -119,7 +132,7 @@ const DownloadTableImage: React.FC = () => {
         });
       }
 
-      // Convert to canvas
+      // Convert to canvas - ensure table structure is preserved
       const canvas = await window.html2canvas(clone, {
         backgroundColor: "#ffffff",
         scale: 2,
@@ -128,11 +141,22 @@ const DownloadTableImage: React.FC = () => {
         width: 800,
         windowWidth: 1920,
         onclone: (clonedDoc) => {
+          // Extra processing to ensure rowspan cells are visible
           const clonedElement = clonedDoc.body.querySelector(
             ".table-container"
           ) as HTMLElement;
+
           if (clonedElement) {
             clonedElement.style.transform = "none";
+
+            // Ensure row headers are visible by explicitly setting their display property
+            const rowspanCells = clonedElement.querySelectorAll("td[rowspan]");
+            rowspanCells.forEach((cell) => {
+              (cell as HTMLElement).style.display = "table-cell";
+              (cell as HTMLElement).style.visibility = "visible";
+              (cell as HTMLElement).style.backgroundColor = "#f9f9f9";
+              (cell as HTMLElement).style.fontWeight = "bold";
+            });
           }
         },
       });
@@ -176,7 +200,7 @@ const DownloadTableImage: React.FC = () => {
       variant="outline"
       size="sm"
       className="text-sm md:text-base flex items-center gap-2"
-      disabled={isLoading}
+      disabled={isLoading || isFormEmpty}
     >
       <Download className="h-4 w-4" />
       <span>{isLoading ? "Sedang diproses..." : "Muat turun jadual"}</span>

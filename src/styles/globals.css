@@ -20,8 +20,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -78,8 +76,6 @@ body {
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -87,4 +83,50 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add these styles to your global CSS or component styled */
+
+/* Ensure waktu cells are always visible */
+.waktu-cell {
+  display: table-cell !important;
+  visibility: visible !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  background-color: #f9f9f9 !important;
+}
+
+/* Special styling for print/download */
+@media print {
+  .table-container {
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000000;
+  }
+
+  .table-container th,
+  .table-container td {
+    border: 1px solid #000000;
+    padding: 12px;
+  }
+
+  .table-container .waktu-cell {
+    display: table-cell !important;
+    visibility: visible !important;
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f9f9f9;
+    font-weight: bold;
+  }
+}
+
+/* Fix for html2canvas rendering */
+.table-container tr td[rowspan] {
+  position: relative;
+  z-index: 1;
 }
