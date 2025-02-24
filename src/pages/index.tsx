@@ -591,10 +591,13 @@ const DutyRosterApp: React.FC = () => {
       </Head>
       <div className="min-h-screen relative pb-4">
         <div className="fixed inset-0 z-0">
-          <img
+          <Image
             src="/sktkp-bg.jpg"
             alt="background"
-            className="w-full h-full object-cover"
+            className="object-cover"
+            fill={true}
+            sizes="100vw"
+            priority
           />
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-red-500/30 via-yellow-500/30 to-orange-500/30 backdrop-blur-sm" />
@@ -627,7 +630,7 @@ const DutyRosterApp: React.FC = () => {
               <CardHeader className="pb-2 md:pb-4 -mt-4">
                 <CardTitle className="text-lg md:text-md lg:text-2xl text-center">
                   Sistem Pengurusan Jadual Bertugas <br /> Guru{" "}
-                  <span className="bg-gradient-to-r from-blue-300 to-yellow-300 bg-clip-text  text-transparent">
+                  <span className="bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500 text-transparent bg-clip-text">
                     SKTKP
                   </span>
                 </CardTitle>
