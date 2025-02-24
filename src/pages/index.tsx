@@ -3,7 +3,6 @@ import type {
   DutyStations,
   FormErrors,
   DayName,
-  DualTeacherStation,
   SingleTeacherStation,
 } from "@src/types";
 
