@@ -179,17 +179,14 @@ const DutyRosterApp: React.FC = () => {
     };
 
     // Validate all duty stations
-    Object.entries(rosterData).forEach(([_section, stations]) => {
-      stations.forEach((station: DutyStation) => {
-        if (station.type === "dual") {
+    Object.entries(rosterData).forEach((stations: DutyStation[]) => {
+      stations.forEach(({ type, selected, id }) => {
+        if (type === "dual") {
           // Check if both teachers are selected for dual stations
-          errors.stations[station.id] = [
-            station.selected[0] === "",
-            station.selected[1] === "",
-          ];
+          errors.stations[id] = [selected[0] === "", selected[1] === ""];
         } else {
           // Check if a teacher is selected for single stations
-          errors.stations[station.id] = station.selected === "";
+          errors.stations[id] = selected === "";
         }
       });
     });
