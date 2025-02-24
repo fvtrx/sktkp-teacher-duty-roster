@@ -4,6 +4,7 @@ import type {
   FormErrors,
   DayName,
   DualTeacherStation,
+  SingleTeacherStation,
 } from "@src/types";
 
 import React, { useState } from "react";
@@ -34,6 +35,7 @@ const DutyRosterApp: React.FC = () => {
   const today = new Date();
   const formattedDate = today.toISOString().split("T")[0];
   const currentDay = dayNames[today.getDay()];
+  const currentYear = today.getFullYear();
 
   const [rosterData, setRosterData] =
     useState<DutyStations>(initialDutyStations);
@@ -63,14 +65,11 @@ const DutyRosterApp: React.FC = () => {
       showErrors: true,
     };
 
-    // Validate all duty stations
     Object.entries(rosterData).forEach((stations: DutyStation[]) => {
       stations.forEach(({ type, selected, id }) => {
         if (type === "dual") {
-          // Check if both teachers are selected for dual stations
           errors.stations[id] = [selected[0] === "", selected[1] === ""];
         } else {
-          // Check if a teacher is selected for single stations
           errors.stations[id] = selected === "";
         }
       });
@@ -78,7 +77,6 @@ const DutyRosterApp: React.FC = () => {
 
     setFormErrors(errors);
 
-    // Check if there are any errors
     return (
       !errors.kumpulan &&
       !errors.minggu &&
@@ -113,7 +111,6 @@ const DutyRosterApp: React.FC = () => {
       return newData;
     });
 
-    // Clear error for this station when a teacher is selected
     if (formErrors.showErrors) {
       setFormErrors((prev) => {
         const newErrors = { ...prev };
@@ -153,9 +150,8 @@ const DutyRosterApp: React.FC = () => {
       return station.selected || "[Belum dipilih]";
     };
 
-    // Using array join with newlines for consistent formatting
     const lines = [
-      `📢 KUMPULAN ${kumpulan} GURU BERTUGAS MINGGUAN SESI 2025`,
+      `📢 KUMPULAN ${kumpulan} GURU BERTUGAS SKTKP MINGGUAN - SESI ${currentYear}`,
       `Assalamualaikum w.b.t. dan selamat sejahtera.`,
       ``,
       `📒 JADUAL BERTUGAS MINGGU ${minggu}`,
@@ -186,20 +182,16 @@ const DutyRosterApp: React.FC = () => {
   };
 
   const handleCopy = async () => {
-    // First validate the form
     if (!validateForm()) {
-      // If validation fails, scroll to top to show error messages
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
     const message = generateMessage();
     try {
-      // Modern approach
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(message);
       } else {
-        // Fallback for older browsers
         const textArea = document.createElement("textarea");
         textArea.value = message;
         document.body.appendChild(textArea);
@@ -221,7 +213,6 @@ const DutyRosterApp: React.FC = () => {
   };
 
   const handleReset = () => {
-    // Reset all state to initial values
     setRosterData(initialDutyStations);
     setReportTeacher("");
     setSelectedDay(currentDay);
@@ -259,25 +250,26 @@ const DutyRosterApp: React.FC = () => {
 
     const newRoster = JSON.parse(JSON.stringify(initialDutyStations));
 
-    // Fill in pagi stations (dual teacher each)
-    newRoster.pagi.forEach((station: DualTeacherStation) => {
-      for (let i = 0; i < 2; i++) {
-        if (teacherIndex < shuffledTeachers.length) {
-          station.selected[i] = shuffledTeachers[teacherIndex++];
+    newRoster.pagi.forEach(
+      (station: Exclude<DutyStation, SingleTeacherStation>) => {
+        for (let i = 0; i < 2; i++) {
+          if (teacherIndex < shuffledTeachers.length) {
+            station.selected[i] = shuffledTeachers[teacherIndex++];
+          }
         }
       }
-    });
+    );
 
-    // Fill in rehat stations (two teachers each)
-    newRoster.rehat.forEach((station: DualTeacherStation) => {
-      for (let i = 0; i < 2; i++) {
-        if (teacherIndex < shuffledTeachers.length) {
-          station.selected[i] = shuffledTeachers[teacherIndex++];
+    newRoster.rehat.forEach(
+      (station: Exclude<DutyStation, SingleTeacherStation>) => {
+        for (let i = 0; i < 2; i++) {
+          if (teacherIndex < shuffledTeachers.length) {
+            station.selected[i] = shuffledTeachers[teacherIndex++];
+          }
         }
       }
-    });
+    );
 
-    // Fill in pulang stations (mixed single and dual)
     newRoster.pulang.forEach((station: DutyStation) => {
       if (station.type === "single") {
         if (teacherIndex < shuffledTeachers.length) {
@@ -292,18 +284,14 @@ const DutyRosterApp: React.FC = () => {
       }
     });
 
-    // Assign report teacher
     let reportTeacherIndex = teacherIndex;
     if (reportTeacherIndex >= shuffledTeachers.length) {
-      // If we've run out of teachers, wrap around to the beginning
       reportTeacherIndex = 0;
     }
 
-    // Update the state
     setRosterData(newRoster);
     setReportTeacher(shuffledTeachers[reportTeacherIndex]);
 
-    // If there were errors showing, clear them since we've filled all the fields
     if (formErrors.showErrors) {
       setFormErrors({
         kumpulan: kumpulan.trim() === "",
