@@ -6,7 +6,7 @@ import type {
   SingleTeacherStation,
 } from "@src/types";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   Card,
   CardHeader,
@@ -29,28 +29,21 @@ import DownloadTableImage from "@src/components/DownloadTableImage";
 import Footer from "@src/components/common/Footer";
 import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
 import { dayNames, initialDutyStations, months } from "@src/lib/constant";
+import { useTeacherRosterContext } from "@src/utils/context";
 
 const DutyRosterApp: React.FC = () => {
-  const today = new Date();
-  const formattedDate = today.toISOString().split("T")[0];
-  const currentDay = dayNames[today.getDay()];
-  const currentYear = today.getFullYear();
-
-  const [rosterData, setRosterData] =
-    useState<DutyStations>(initialDutyStations);
-  const [reportTeacher, setReportTeacher] = useState("");
-  const [selectedDay, setSelectedDay] = useState<DayName>(currentDay);
-  const [selectedDate, setSelectedDate] = useState(formattedDate);
-  const [copied, setCopied] = useState(false);
-  const [kumpulan, setKumpulan] = useState("");
-  const [minggu, setMinggu] = useState("");
-  const [formErrors, setFormErrors] = useState<FormErrors>({
-    kumpulan: false,
-    minggu: false,
-    reportTeacher: false,
-    stations: {},
-    showErrors: false,
-  });
+  const {
+    roster: { data: rosterData, reportTeacher },
+    schedule: {
+      kumpulan,
+      date: selectedDate,
+      day: selectedDay,
+      minggu,
+      currentYear,
+    },
+    ui: { formErrors, copied },
+    set,
+  } = useTeacherRosterContext();
 
   const { data, isLoading, isError } = useGetSenaraiGuru();
   const teachers = data?.teachers;
@@ -74,7 +67,7 @@ const DutyRosterApp: React.FC = () => {
       });
     });
 
-    setFormErrors(errors);
+    set.formErrors(errors);
 
     return (
       !errors.kumpulan &&
@@ -95,7 +88,7 @@ const DutyRosterApp: React.FC = () => {
     teacherName: string,
     index?: number
   ) => {
-    setRosterData((prev) => {
+    set.rosterData((prev) => {
       const newData = { ...prev };
       const station = newData[section].find((s) => s.id === stationId);
 
@@ -111,7 +104,7 @@ const DutyRosterApp: React.FC = () => {
     });
 
     if (formErrors.showErrors) {
-      setFormErrors((prev) => {
+      set.formErrors((prev) => {
         const newErrors = { ...prev };
         if (
           typeof index === "number" &&
@@ -198,8 +191,8 @@ const DutyRosterApp: React.FC = () => {
         document.execCommand("copy");
         document.body.removeChild(textArea);
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      set.copied(true);
+      setTimeout(() => set.copied(false), 2000);
     } catch (err) {
       console.error("Failed to copy text:", err);
     }
@@ -207,18 +200,18 @@ const DutyRosterApp: React.FC = () => {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const newDate = new Date(e.target.value);
-    setSelectedDate(e.target.value);
-    setSelectedDay(dayNames[newDate.getDay()]);
+    set.selectedDate(e.target.value);
+    set.selectedDay(dayNames[newDate.getDay()]);
   };
 
   const handleReset = () => {
-    setRosterData(initialDutyStations);
-    setReportTeacher("");
-    setSelectedDay(currentDay);
-    setSelectedDate(formattedDate);
-    setKumpulan("");
-    setMinggu("");
-    setFormErrors({
+    set.rosterData(initialDutyStations);
+    set.reportTeacher("");
+    set.selectedDay(selectedDay);
+    set.selectedDate(selectedDate);
+    set.kumpulan("");
+    set.minggu("");
+    set.formErrors({
       kumpulan: false,
       minggu: false,
       reportTeacher: false,
@@ -288,11 +281,11 @@ const DutyRosterApp: React.FC = () => {
       reportTeacherIndex = 0;
     }
 
-    setRosterData(newRoster);
-    setReportTeacher(shuffledTeachers[reportTeacherIndex]);
+    set.rosterData(newRoster);
+    set.reportTeacher(shuffledTeachers[reportTeacherIndex]);
 
     if (formErrors.showErrors) {
-      setFormErrors({
+      set.formErrors({
         kumpulan: kumpulan.trim() === "",
         minggu: minggu.trim() === "",
         reportTeacher: false,
@@ -533,9 +526,9 @@ const DutyRosterApp: React.FC = () => {
                       min="1"
                       value={kumpulan}
                       onChange={(e) => {
-                        setKumpulan(e.target.value);
+                        set.kumpulan(e.target.value);
                         if (formErrors.showErrors) {
-                          setFormErrors({
+                          set.formErrors({
                             ...formErrors,
                             kumpulan: e.target.value.trim() === "",
                           });
@@ -567,9 +560,9 @@ const DutyRosterApp: React.FC = () => {
                       min="1"
                       value={minggu}
                       onChange={(e) => {
-                        setMinggu(e.target.value);
+                        set.minggu(e.target.value);
                         if (formErrors.showErrors) {
-                          setFormErrors({
+                          set.formErrors({
                             ...formErrors,
                             minggu: e.target.value.trim() === "",
                           });
@@ -600,7 +593,7 @@ const DutyRosterApp: React.FC = () => {
                       value={selectedDay}
                       onValueChange={(value: DayName) => {
                         if (dayNames.includes(value)) {
-                          setSelectedDay(value);
+                          set.selectedDay(value);
                         }
                       }}
                     >
@@ -684,9 +677,9 @@ const DutyRosterApp: React.FC = () => {
                         <Select
                           value={reportTeacher}
                           onValueChange={(value) => {
-                            setReportTeacher(value);
+                            set.reportTeacher(value);
                             if (formErrors.showErrors) {
-                              setFormErrors({
+                              set.formErrors({
                                 ...formErrors,
                                 reportTeacher: value === "",
                               });
