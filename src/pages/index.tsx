@@ -877,7 +877,7 @@ const DutyRosterApp: React.FC = () => {
                 </>
               )}
 
-              <div className="pt-8 place-items-center lg:place-items-end">
+              <div className="pt-8 place-items-center md:place-items-center lg:place-items-end">
                 <Button
                   variant="outline"
                   className="rounded-md text-sm md:text-base px-6 flex items-center gap-2"
