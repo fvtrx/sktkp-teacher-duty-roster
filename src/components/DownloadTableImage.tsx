@@ -19,12 +19,24 @@ declare global {
   }
 }
 
-const DownloadTableImage: React.FC<{ isFormEmpty: boolean }> = ({
+interface DownloadTableImageProps {
+  isFormEmpty: boolean;
+  onBeforeDownload?: () => boolean;
+}
+
+const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
   isFormEmpty,
+  onBeforeDownload,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDownload = async () => {
+    // Check if onBeforeDownload is provided and execute it
+    if (onBeforeDownload && !onBeforeDownload()) {
+      // If onBeforeDownload returns false, abort the download
+      return;
+    }
+
     try {
       setIsLoading(true);
 

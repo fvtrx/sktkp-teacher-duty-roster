@@ -6,7 +6,7 @@ import {
   CardContent,
 } from "@src/components/ui/card";
 import { Button } from "@src/components/ui/button";
-import { Check, Copy, Shuffle } from "lucide-react";
+import { Check, Copy, Shuffle, AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -58,16 +58,26 @@ interface SingleTeacherStation {
 interface DualTeacherStation {
   id: string;
   label: string;
-  selected: [string, string];
+  selected: string[];
   type: "dual";
 }
 
 type DutyStation = SingleTeacherStation | DualTeacherStation;
 
 export interface DutyStations {
-  pagi: (SingleTeacherStation | DualTeacherStation)[];
+  pagi: DualTeacherStation[];
   rehat: DualTeacherStation[];
   pulang: (SingleTeacherStation | DualTeacherStation)[];
+}
+
+interface FormErrors {
+  kumpulan: boolean;
+  minggu: boolean;
+  reportTeacher: boolean;
+  stations: {
+    [key: string]: boolean | boolean[];
+  };
+  showErrors: boolean;
 }
 
 const DutyRosterApp: React.FC = () => {
@@ -150,6 +160,56 @@ const DutyRosterApp: React.FC = () => {
   const [kumpulan, setKumpulan] = useState("");
   const [minggu, setMinggu] = useState("");
 
+  // Add new state for validation errors
+  const [formErrors, setFormErrors] = useState<FormErrors>({
+    kumpulan: false,
+    minggu: false,
+    reportTeacher: false,
+    stations: {},
+    showErrors: false,
+  });
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {
+      kumpulan: kumpulan.trim() === "",
+      minggu: minggu.trim() === "",
+      reportTeacher: reportTeacher === "",
+      stations: {},
+      showErrors: true,
+    };
+
+    // Validate all duty stations
+    Object.entries(rosterData).forEach(([section, stations]) => {
+      stations.forEach((station: DutyStation) => {
+        if (station.type === "dual") {
+          // Check if both teachers are selected for dual stations
+          errors.stations[station.id] = [
+            station.selected[0] === "",
+            station.selected[1] === "",
+          ];
+        } else {
+          // Check if a teacher is selected for single stations
+          errors.stations[station.id] = station.selected === "";
+        }
+      });
+    });
+
+    setFormErrors(errors);
+
+    // Check if there are any errors
+    return (
+      !errors.kumpulan &&
+      !errors.minggu &&
+      !errors.reportTeacher &&
+      !Object.values(errors.stations).some((error) => {
+        if (Array.isArray(error)) {
+          return error.some((e) => e);
+        }
+        return error;
+      })
+    );
+  };
+
   const handleTeacherSelect = (
     section: keyof DutyStations,
     stationId: string,
@@ -170,6 +230,22 @@ const DutyRosterApp: React.FC = () => {
 
       return newData;
     });
+
+    // Clear error for this station when a teacher is selected
+    if (formErrors.showErrors) {
+      setFormErrors((prev) => {
+        const newErrors = { ...prev };
+        if (
+          typeof index === "number" &&
+          Array.isArray(newErrors.stations[stationId])
+        ) {
+          (newErrors.stations[stationId] as boolean[])[index] = false;
+        } else {
+          newErrors.stations[stationId] = false;
+        }
+        return newErrors;
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -186,9 +262,13 @@ const DutyRosterApp: React.FC = () => {
         ? `${selectedDay} - ${formatDate(selectedDate)}`
         : "[Tarikh belum dipilih]";
 
-    const formatRehatDuty = (station: DualTeacherStation) => {
-      const teachers = station.selected.filter((t) => t).join(" / ");
-      return teachers || "[Belum dipilih]";
+    const formatDuty = (station: DutyStation) => {
+      if (station.type === "dual") {
+        return (
+          station.selected.filter(Boolean).join(" / ") || "[Belum dipilih]"
+        );
+      }
+      return station.selected || "[Belum dipilih]";
     };
 
     // Using array join with newlines for consistent formatting
@@ -201,19 +281,17 @@ const DutyRosterApp: React.FC = () => {
       ``,
       `📌 PAGI`,
       ...rosterData.pagi.map(
-        (station) =>
-          `🔹 ${station.label} - ${station.selected || "[Belum dipilih]"}`
+        (station) => `🔹 ${station.label} - ${formatDuty(station)}`
       ),
       ``,
       `📌 REHAT`,
       ...rosterData.rehat.map(
-        (station) => `🔹 ${station.label} - ${formatRehatDuty(station)}`
+        (station) => `🔹 ${station.label} - ${formatDuty(station)}`
       ),
       ``,
       `📌 PULANG`,
       ...rosterData.pulang.map(
-        (station) =>
-          `🔹 ${station.label} - ${station.selected || "[Belum dipilih]"}`
+        (station) => `🔹 ${station.label} - ${formatDuty(station)}`
       ),
       ``,
       `📌 BUKU LAPORAN`,
@@ -226,6 +304,13 @@ const DutyRosterApp: React.FC = () => {
   };
 
   const handleCopy = async () => {
+    // First validate the form
+    if (!validateForm()) {
+      // If validation fails, scroll to top to show error messages
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     const message = generateMessage();
     try {
       // Modern approach
@@ -253,115 +338,6 @@ const DutyRosterApp: React.FC = () => {
     setSelectedDay(dayNames[newDate.getDay()]);
   };
 
-  const renderTeacherSelect = (
-    station: DutyStation,
-    section: keyof DutyStations
-  ) => {
-    if (station.type === "dual") {
-      return (
-        <div className="flex flex-col lg:flex-row gap-2">
-          {[0, 1].map((index) => (
-            <div key={index} className="flex-1">
-              <Select
-                value={station.selected[index]}
-                onValueChange={(value) =>
-                  handleTeacherSelect(section, station.id, value, index)
-                }
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      <span>Memuatkan...</span>
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Pilih Guru" />
-                  )}
-                </SelectTrigger>
-                <SelectContent className="min-w-[200px]">
-                  {teachers?.map((teacher) => (
-                    <SelectItem key={teacher} value={teacher}>
-                      {teacher}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-full lg:w-1/2">
-        <Select
-          value={station.selected}
-          onValueChange={(value) =>
-            handleTeacherSelect(section, station.id, value)
-          }
-          disabled={isLoading}
-        >
-          <SelectTrigger>
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                <span>Memuatkan...</span>
-              </div>
-            ) : (
-              <SelectValue placeholder="Pilih Guru" />
-            )}
-          </SelectTrigger>
-          <SelectContent className="min-w-[200px]">
-            {teachers?.map((teacher) => (
-              <SelectItem key={teacher} value={teacher}>
-                {teacher}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  };
-
   const handleReset = () => {
     // Reset all state to initial values
     setRosterData(initialDutyStations);
@@ -370,6 +346,21 @@ const DutyRosterApp: React.FC = () => {
     setSelectedDate(formattedDate);
     setKumpulan("");
     setMinggu("");
+    setFormErrors({
+      kumpulan: false,
+      minggu: false,
+      reportTeacher: false,
+      stations: {},
+      showErrors: false,
+    });
+  };
+
+  const handleDownload = () => {
+    if (!validateForm()) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return false;
+    }
+    return true;
   };
 
   const isFormEmpty =
@@ -379,19 +370,19 @@ const DutyRosterApp: React.FC = () => {
     minggu === "";
 
   const randomizeTeachers = (): void => {
-    // Create a shuffled copy of the teachers array
     const shuffledTeachers = [...(teachers ?? [])].sort(
       () => Math.random() - 0.5
     );
     let teacherIndex = 0;
 
-    // Create a deep copy of the initial roster structure
     const newRoster = JSON.parse(JSON.stringify(initialDutyStations));
 
-    // Fill in pagi stations (single teacher each)
-    newRoster.pagi.forEach((station: SingleTeacherStation) => {
-      if (teacherIndex < shuffledTeachers.length) {
-        station.selected = shuffledTeachers[teacherIndex++];
+    // Fill in pagi stations (dual teacher each)
+    newRoster.pagi.forEach((station: DualTeacherStation) => {
+      for (let i = 0; i < 2; i++) {
+        if (teacherIndex < shuffledTeachers.length) {
+          station.selected[i] = shuffledTeachers[teacherIndex++];
+        }
       }
     });
 
@@ -429,6 +420,154 @@ const DutyRosterApp: React.FC = () => {
     // Update the state
     setRosterData(newRoster);
     setReportTeacher(shuffledTeachers[reportTeacherIndex]);
+
+    // If there were errors showing, clear them since we've filled all the fields
+    if (formErrors.showErrors) {
+      setFormErrors({
+        kumpulan: kumpulan.trim() === "",
+        minggu: minggu.trim() === "",
+        reportTeacher: false,
+        stations: {},
+        showErrors: true,
+      });
+    }
+  };
+
+  const renderTeacherSelect = (
+    station: DutyStation,
+    section: keyof DutyStations
+  ) => {
+    if (station.type === "dual") {
+      return (
+        <div className="flex flex-col lg:flex-row gap-2">
+          {[0, 1].map((index) => (
+            <div key={index} className="flex-1">
+              <Select
+                value={station.selected[index]}
+                onValueChange={(value) =>
+                  handleTeacherSelect(section, station.id, value, index)
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger
+                  className={`w-full ${
+                    formErrors.showErrors &&
+                    Array.isArray(formErrors.stations[station.id]) &&
+                    (formErrors.stations[station.id] as boolean[])[index]
+                      ? "border-red-500 ring-1 ring-red-500"
+                      : ""
+                  }`}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span>Memuatkan...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Pilih Guru" />
+                  )}
+                </SelectTrigger>
+                <SelectContent className="min-w-[200px]">
+                  {teachers?.map((teacher) => (
+                    <SelectItem key={teacher} value={teacher}>
+                      {teacher}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.showErrors &&
+                Array.isArray(formErrors.stations[station.id]) &&
+                (formErrors.stations[station.id] as boolean[])[index] && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Sila pilih guru
+                  </p>
+                )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full lg:w-1/2">
+        <Select
+          value={station.selected}
+          onValueChange={(value) =>
+            handleTeacherSelect(section, station.id, value)
+          }
+          disabled={isLoading}
+        >
+          <SelectTrigger
+            className={
+              formErrors.showErrors && formErrors.stations[station.id]
+                ? "border-red-500 ring-1 ring-red-500"
+                : ""
+            }
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span>Memuatkan...</span>
+              </div>
+            ) : (
+              <SelectValue placeholder="Pilih Guru" />
+            )}
+          </SelectTrigger>
+          <SelectContent className="min-w-[200px]">
+            {teachers?.map((teacher) => (
+              <SelectItem key={teacher} value={teacher}>
+                {teacher}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {formErrors.showErrors && formErrors.stations[station.id] && (
+          <p className="text-red-500 text-xs mt-1 flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Sila pilih guru
+          </p>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -464,6 +603,22 @@ const DutyRosterApp: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-red-500/30 via-yellow-500/30 to-orange-500/30 backdrop-blur-sm" />
         </div>
         <div className="relative z-10 container mx-auto px-4 py-6 md:py-8 max-w-4xl">
+          {/* Show validation error alert */}
+          {formErrors.showErrors && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6 shadow-sm">
+              <div className="flex items-center">
+                <AlertCircle className="h-6 w-6 mr-2" />
+                <p className="font-bold">
+                  Sila lengkapkan semua maklumat yang diperlukan
+                </p>
+              </div>
+              <p className="text-sm mt-1">
+                Semua maklumat perlu diisi sebelum jadual lengkap guru bertugas
+                dapat dijana.
+              </p>
+            </div>
+          )}
+
           <Card className="mb-6">
             <div className="flex flex-col justify-center place-items-center p-4 md:p-6">
               <Image
@@ -492,26 +647,70 @@ const DutyRosterApp: React.FC = () => {
                   <div className="space-y-2">
                     <label className="block text-sm font-medium">
                       Kumpulan:
+                      {formErrors.showErrors && formErrors.kumpulan && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
                     </label>
                     <Input
                       type="number"
-                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.showErrors && formErrors.kumpulan
+                          ? "border-red-500 ring-1 ring-red-500"
+                          : ""
+                      }`}
                       min="1"
                       value={kumpulan}
-                      onChange={(e) => setKumpulan(e.target.value)}
+                      onChange={(e) => {
+                        setKumpulan(e.target.value);
+                        if (formErrors.showErrors) {
+                          setFormErrors({
+                            ...formErrors,
+                            kumpulan: e.target.value.trim() === "",
+                          });
+                        }
+                      }}
                       placeholder="Nombor Kumpulan"
                     />
+                    {formErrors.showErrors && formErrors.kumpulan && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Sila masukkan nombor kumpulan
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium">Minggu:</label>
+                    <label className="block text-sm font-medium">
+                      Minggu:
+                      {formErrors.showErrors && formErrors.minggu && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
                     <Input
                       type="number"
-                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.showErrors && formErrors.minggu
+                          ? "border-red-500 ring-1 ring-red-500"
+                          : ""
+                      }`}
                       min="1"
                       value={minggu}
-                      onChange={(e) => setMinggu(e.target.value)}
+                      onChange={(e) => {
+                        setMinggu(e.target.value);
+                        if (formErrors.showErrors) {
+                          setFormErrors({
+                            ...formErrors,
+                            minggu: e.target.value.trim() === "",
+                          });
+                        }
+                      }}
                       placeholder="Minggu"
                     />
+                    {formErrors.showErrors && formErrors.minggu && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Sila masukkan nombor minggu
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -585,6 +784,10 @@ const DutyRosterApp: React.FC = () => {
                           <div key={station.id} className="space-y-2">
                             <label className="block text-sm font-medium">
                               {station.label}:
+                              {formErrors.showErrors &&
+                                formErrors.stations[station.id] && (
+                                  <span className="text-red-500 ml-1">*</span>
+                                )}
                             </label>
                             {renderTeacherSelect(station, section)}
                           </div>
@@ -601,14 +804,31 @@ const DutyRosterApp: React.FC = () => {
                     <div className="space-y-2">
                       <label className="block text-sm font-medium">
                         Guru Bertugas:
+                        {formErrors.showErrors && formErrors.reportTeacher && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
                       </label>
                       <div className="w-full lg:w-1/2">
                         <Select
                           value={reportTeacher}
-                          onValueChange={(value) => setReportTeacher(value)}
+                          onValueChange={(value) => {
+                            setReportTeacher(value);
+                            if (formErrors.showErrors) {
+                              setFormErrors({
+                                ...formErrors,
+                                reportTeacher: value === "",
+                              });
+                            }
+                          }}
                           disabled={isLoading}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger
+                            className={
+                              formErrors.showErrors && formErrors.reportTeacher
+                                ? "border-red-500 ring-1 ring-red-500"
+                                : ""
+                            }
+                          >
                             {isLoading ? (
                               <div className="flex items-center justify-center">
                                 <svg
@@ -645,6 +865,12 @@ const DutyRosterApp: React.FC = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {formErrors.showErrors && formErrors.reportTeacher && (
+                          <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Sila pilih guru
+                          </p>
+                        )}
                       </div>
                     </div>
                   </section>
@@ -698,12 +924,14 @@ const DutyRosterApp: React.FC = () => {
 
           <Card className="w-full">
             <CardHeader className="pb-2 md:pb-4">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col items-start justify-between gap-4">
                 <CardTitle className="text-lg md:text-xl">
-                  {`Jadual Bertugas Minggu ${minggu} - Kumpulan ${kumpulan}`}
+                  {`Jadual Bertugas Minggu ${minggu || ""} - Kumpulan ${
+                    kumpulan || ""
+                  }`}
                 </CardTitle>
 
-                <div className="flex flex-col md:flex-row lg:flex-row  gap-2 pt-2">
+                <div className="flex flex-col w-full md:flex-row lg:flex-row gap-2 pt-2">
                   <Button
                     variant="destructive"
                     className="rounded-md text-sm md:text-base px-6"
@@ -731,7 +959,11 @@ const DutyRosterApp: React.FC = () => {
                       </>
                     )}
                   </Button>
-                  <DownloadTableImage isFormEmpty={isFormEmpty} />
+                  {/* Modified DownloadTableImage component that checks validation first */}
+                  <DownloadTableImage
+                    isFormEmpty={isFormEmpty}
+                    onBeforeDownload={handleDownload}
+                  />
                 </div>
               </div>
             </CardHeader>
@@ -771,7 +1003,11 @@ const DutyRosterApp: React.FC = () => {
                           )}
                           <td className="border px-4 py-2">{station.label}</td>
                           <td className="border px-4 py-2 truncate">
-                            {station.selected || "[Belum dipilih]"}
+                            {Array.isArray(station.selected)
+                              ? station.selected.filter(Boolean).length > 0
+                                ? station.selected.filter(Boolean).join(" / ")
+                                : "[Belum dipilih]"
+                              : station.selected || "[Belum dipilih]"}
                           </td>
                         </tr>
                       ))}
@@ -792,8 +1028,11 @@ const DutyRosterApp: React.FC = () => {
                           )}
                           <td className="border px-4 py-2">{station.label}</td>
                           <td className="border px-4 py-2 truncate">
-                            {station.selected.filter(Boolean).join(" / ") ||
-                              "[Belum dipilih]"}
+                            {Array.isArray(station.selected)
+                              ? station.selected.filter(Boolean).length > 0
+                                ? station.selected.filter(Boolean).join(" / ")
+                                : "[Belum dipilih]"
+                              : station.selected || "[Belum dipilih]"}
                           </td>
                         </tr>
                       ))}
@@ -814,9 +1053,10 @@ const DutyRosterApp: React.FC = () => {
                           )}
                           <td className="border px-4 py-2">{station.label}</td>
                           <td className="border px-4 py-2 truncate">
-                            {station.type === "dual"
-                              ? station.selected.filter(Boolean).join(" / ") ||
-                                "[Belum dipilih]"
+                            {Array.isArray(station.selected)
+                              ? station.selected.filter(Boolean).length > 0
+                                ? station.selected.filter(Boolean).join(" / ")
+                                : "[Belum dipilih]"
                               : station.selected || "[Belum dipilih]"}
                           </td>
                         </tr>
