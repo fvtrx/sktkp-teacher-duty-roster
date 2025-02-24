@@ -28,78 +28,12 @@ import Head from "next/head";
 import DownloadTableImage from "@src/components/DownloadTableImage";
 import Footer from "@src/components/common/Footer";
 import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
-import { dayNames, months } from "@src/lib/constant";
+import { dayNames, initialDutyStations, months } from "@src/lib/constant";
 
 const DutyRosterApp: React.FC = () => {
   const today = new Date();
   const formattedDate = today.toISOString().split("T")[0];
   const currentDay = dayNames[today.getDay()];
-
-  const { data, isLoading, isError } = useGetSenaraiGuru();
-  const teachers = data?.teachers;
-
-  const initialDutyStations: DutyStations = {
-    pagi: [
-      {
-        id: "pagarDepanPagi",
-        label: "Pagar Depan",
-        selected: ["", ""],
-        type: "dual",
-      },
-      {
-        id: "pagarBelakangPagi",
-        label: "Pagar Belakang",
-        selected: ["", ""],
-        type: "dual",
-      },
-      {
-        id: "siarayaPagi",
-        label: "Siaraya Pagi",
-        selected: ["", ""],
-        type: "dual",
-      },
-    ],
-    rehat: [
-      {
-        id: "kantin13",
-        label: "Siaraya / Kantin Tahun 1 & 3",
-        selected: ["", ""],
-        type: "dual",
-      },
-      {
-        id: "kantin24",
-        label: "Siaraya / Kantin Tahun 2 & 4",
-        selected: ["", ""],
-        type: "dual",
-      },
-      {
-        id: "kantin56",
-        label: "Siaraya / Kantin Tahun 5 & 6",
-        selected: ["", ""],
-        type: "dual",
-      },
-    ],
-    pulang: [
-      {
-        id: "pagarDepanPulang",
-        label: "Pagar Depan",
-        selected: ["", ""],
-        type: "dual",
-      },
-      {
-        id: "pagarBelakangPulang",
-        label: "Pagar Belakang",
-        selected: ["", ""],
-        type: "dual",
-      },
-      {
-        id: "siarayaPulang",
-        label: "Siaraya Pulang",
-        selected: ["", ""],
-        type: "dual",
-      },
-    ],
-  };
 
   const [rosterData, setRosterData] =
     useState<DutyStations>(initialDutyStations);
@@ -109,8 +43,6 @@ const DutyRosterApp: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [kumpulan, setKumpulan] = useState("");
   const [minggu, setMinggu] = useState("");
-
-  // Add new state for validation errors
   const [formErrors, setFormErrors] = useState<FormErrors>({
     kumpulan: false,
     minggu: false,
@@ -118,6 +50,9 @@ const DutyRosterApp: React.FC = () => {
     stations: {},
     showErrors: false,
   });
+
+  const { data, isLoading, isError } = useGetSenaraiGuru();
+  const teachers = data?.teachers;
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {
