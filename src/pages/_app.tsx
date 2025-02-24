@@ -1,4 +1,4 @@
-import { dayNames, initialDutyStations } from "@src/lib/constant";
+import { initialDutyStations } from "@src/lib/constant";
 import "@src/styles/globals.css";
 import { TeacherRosterProvider } from "@src/utils/context";
 import type { AppProps } from "next/app";
