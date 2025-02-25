@@ -3,10 +3,9 @@ import type {
   DutyStations,
   FormErrors,
   DayName,
-  SingleTeacherStation,
 } from "@src/types";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -30,6 +29,7 @@ import Footer from "@src/components/common/Footer";
 import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
 import { dayNames, initialDutyStations, months } from "@src/lib/constant";
 import { useTeacherRosterContext } from "@src/utils/context";
+import { calculateCurrentWeek } from "@src/utils/helpers/datetime";
 
 const DutyRosterApp: React.FC = () => {
   const {
@@ -44,9 +44,17 @@ const DutyRosterApp: React.FC = () => {
     ui: { formErrors, copied },
     set,
   } = useTeacherRosterContext();
+  const [isRandomizedLoading, setIsRandomizedLoading] = useState(false);
+  const currentWeek = calculateCurrentWeek();
 
   const { data, isLoading, isError } = useGetSenaraiGuru();
   const teachers = data?.teachers;
+
+  useEffect(() => {
+    if (minggu === "") {
+      set.minggu(currentWeek.toString());
+    }
+  }, [minggu, set]);
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {
@@ -210,7 +218,7 @@ const DutyRosterApp: React.FC = () => {
     set.selectedDay(selectedDay);
     set.selectedDate(selectedDate);
     set.kumpulan("");
-    set.minggu("");
+    set.minggu(currentWeek.toString());
     set.formErrors({
       kumpulan: false,
       minggu: false,
@@ -234,64 +242,70 @@ const DutyRosterApp: React.FC = () => {
     kumpulan === "" &&
     minggu === "";
 
-  const randomizeTeachers = (): void => {
-    const shuffledTeachers = [...(teachers ?? [])].sort(
-      () => Math.random() - 0.5
-    );
-    let teacherIndex = 0;
+  const randomizeTeachers = async (): Promise<void> => {
+    setIsRandomizedLoading(true);
 
-    const newRoster = JSON.parse(JSON.stringify(initialDutyStations));
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    newRoster.pagi.forEach(
-      (station: Exclude<DutyStation, SingleTeacherStation>) => {
-        for (let i = 0; i < 2; i++) {
+      const shuffledTeachers = [...(teachers ?? [])].sort(
+        () => Math.random() - 0.5
+      );
+
+      const newRoster = JSON.parse(JSON.stringify(initialDutyStations));
+
+      let teacherIndex = 0;
+
+      const assignTeachersToStation = (
+        station: DutyStation,
+        count: number
+      ): void => {
+        if (station.type === "single") {
           if (teacherIndex < shuffledTeachers.length) {
-            station.selected[i] = shuffledTeachers[teacherIndex++];
+            station.selected = shuffledTeachers[teacherIndex++];
+          }
+        } else {
+          for (let i = 0; i < count; i++) {
+            if (teacherIndex < shuffledTeachers.length) {
+              station.selected[i] = shuffledTeachers[teacherIndex++];
+            }
           }
         }
+      };
+
+      const processStations = (
+        stations: DutyStation[],
+        teachersPerStation: number
+      ) => {
+        stations.forEach((station) => {
+          assignTeachersToStation(station, teachersPerStation);
+        });
+      };
+
+      // Process each station category
+      processStations(newRoster.pagi, 2);
+      processStations(newRoster.rehat, 2);
+      processStations(newRoster.pulang, 2);
+
+      const reportTeacherIndex =
+        teacherIndex < shuffledTeachers.length ? teacherIndex : 0;
+
+      set.rosterData(newRoster);
+      set.reportTeacher(shuffledTeachers[reportTeacherIndex]);
+
+      if (formErrors.showErrors) {
+        set.formErrors({
+          kumpulan: kumpulan.trim() === "",
+          minggu: minggu.trim() === "",
+          reportTeacher: false,
+          stations: {},
+          showErrors: true,
+        });
       }
-    );
-
-    newRoster.rehat.forEach(
-      (station: Exclude<DutyStation, SingleTeacherStation>) => {
-        for (let i = 0; i < 2; i++) {
-          if (teacherIndex < shuffledTeachers.length) {
-            station.selected[i] = shuffledTeachers[teacherIndex++];
-          }
-        }
-      }
-    );
-
-    newRoster.pulang.forEach((station: DutyStation) => {
-      if (station.type === "single") {
-        if (teacherIndex < shuffledTeachers.length) {
-          station.selected = shuffledTeachers[teacherIndex++];
-        }
-      } else {
-        for (let i = 0; i < 2; i++) {
-          if (teacherIndex < shuffledTeachers.length) {
-            station.selected[i] = shuffledTeachers[teacherIndex++];
-          }
-        }
-      }
-    });
-
-    let reportTeacherIndex = teacherIndex;
-    if (reportTeacherIndex >= shuffledTeachers.length) {
-      reportTeacherIndex = 0;
-    }
-
-    set.rosterData(newRoster);
-    set.reportTeacher(shuffledTeachers[reportTeacherIndex]);
-
-    if (formErrors.showErrors) {
-      set.formErrors({
-        kumpulan: kumpulan.trim() === "",
-        minggu: minggu.trim() === "",
-        reportTeacher: false,
-        stations: {},
-        showErrors: true,
-      });
+    } catch (error) {
+      console.error("Error during randomization:", error);
+    } finally {
+      setIsRandomizedLoading(false);
     }
   };
 
@@ -748,9 +762,9 @@ const DutyRosterApp: React.FC = () => {
                   className="rounded-md text-sm md:text-base px-6 flex items-center gap-2"
                   size="lg"
                   onClick={randomizeTeachers}
-                  disabled={isLoading}
+                  disabled={isLoading || isRandomizedLoading}
                 >
-                  {isLoading ? (
+                  {isLoading || isRandomizedLoading ? (
                     <>
                       <svg
                         className="animate-spin h-4 w-4 text-gray-500"
@@ -772,12 +786,19 @@ const DutyRosterApp: React.FC = () => {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      <span>Memuatkan...</span>
+                      <span>
+                        {isLoading
+                          ? "Memuatkan..."
+                          : isRandomizedLoading
+                          ? "Dalam proses..."
+                          : "Jana jadual rawak"}
+                        .
+                      </span>
                     </>
                   ) : (
                     <>
                       <Shuffle />
-                      Pilih guru secara rawak
+                      Jana jadual rawak
                     </>
                   )}
                 </Button>
