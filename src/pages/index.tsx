@@ -1,19 +1,20 @@
 import type {
+  DayName,
   DutyStation,
   DutyStations,
   FormErrors,
-  DayName,
 } from "@src/types";
 
-import React, { useEffect, useState } from "react";
+import DownloadTableImage from "@src/components/DownloadTableImage";
+import Footer from "@src/components/common/Footer";
+import { Button } from "@src/components/ui/button";
 import {
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
-  CardContent,
 } from "@src/components/ui/card";
-import { Button } from "@src/components/ui/button";
-import { Check, Copy, Shuffle, AlertCircle } from "lucide-react";
+import { Input } from "@src/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,15 +22,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@src/components/ui/select";
-import { Input } from "@src/components/ui/input";
-import Image from "next/image";
-import Head from "next/head";
-import DownloadTableImage from "@src/components/DownloadTableImage";
-import Footer from "@src/components/common/Footer";
-import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
 import { dayNames, initialDutyStations, months } from "@src/lib/constant";
 import { useTeacherRosterContext } from "@src/utils/context";
 import { calculateCurrentWeek } from "@src/utils/helpers/datetime";
+import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
+import {
+  AlertCircle,
+  Calendar,
+  Check,
+  ClipboardList,
+  Copy,
+  Shuffle,
+} from "lucide-react";
+import Head from "next/head";
+import Image from "next/image";
+import React, { useEffect, useState } from "react";
 
 const DutyRosterApp: React.FC = () => {
   const {
@@ -315,7 +322,7 @@ const DutyRosterApp: React.FC = () => {
   ) => {
     if (station.type === "dual") {
       return (
-        <div className="flex flex-col lg:flex-row gap-2">
+        <div className="flex flex-col lg:flex-row gap-3">
           {[0, 1].map((index) => (
             <div key={index} className="flex-1">
               <Select
@@ -326,45 +333,30 @@ const DutyRosterApp: React.FC = () => {
                 disabled={isLoading}
               >
                 <SelectTrigger
-                  className={`w-full ${
+                  className={`w-full transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
                     formErrors.showErrors &&
                     Array.isArray(formErrors.stations[station.id]) &&
                     (formErrors.stations[station.id] as boolean[])[index]
                       ? "border-red-500 ring-1 ring-red-500"
-                      : ""
+                      : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                   }`}
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                      <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
                       <span>Memuatkan...</span>
                     </div>
                   ) : (
                     <SelectValue placeholder="Pilih Guru" />
                   )}
                 </SelectTrigger>
-                <SelectContent className="min-w-[200px]">
+                <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
                   {teachers?.map((teacher) => (
-                    <SelectItem key={teacher} value={teacher}>
+                    <SelectItem
+                      key={teacher}
+                      value={teacher}
+                      className="focus:bg-blue-50"
+                    >
                       {teacher}
                     </SelectItem>
                   ))}
@@ -394,43 +386,28 @@ const DutyRosterApp: React.FC = () => {
           disabled={isLoading}
         >
           <SelectTrigger
-            className={
+            className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
               formErrors.showErrors && formErrors.stations[station.id]
                 ? "border-red-500 ring-1 ring-red-500"
-                : ""
-            }
+                : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            }`}
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
+                <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
                 <span>Memuatkan...</span>
               </div>
             ) : (
               <SelectValue placeholder="Pilih Guru" />
             )}
           </SelectTrigger>
-          <SelectContent className="min-w-[200px]">
+          <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
             {teachers?.map((teacher) => (
-              <SelectItem key={teacher} value={teacher}>
+              <SelectItem
+                key={teacher}
+                value={teacher}
+                className="focus:bg-blue-50"
+              >
                 {teacher}
               </SelectItem>
             ))}
@@ -447,7 +424,7 @@ const DutyRosterApp: React.FC = () => {
   };
 
   return (
-    <>
+    <div>
       <Head>
         <title>Sistem Pengurusan Jadual Bertugas Guru SKTKP</title>
         <meta
@@ -468,63 +445,72 @@ const DutyRosterApp: React.FC = () => {
           href="/favicon-16x16.png"
         />
       </Head>
-      <div className="min-h-screen relative pb-4">
+      <div className="min-h-screen relative pb-4 bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="fixed inset-0 z-0">
           <Image
             src="/sktkp-bg.jpg"
             alt="background"
-            className="object-cover"
+            className="object-cover opacity-15"
             fill={true}
             sizes="100vw"
             priority
           />
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-red-500/30 via-yellow-500/30 to-orange-500/30 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-white/50 to-purple-500/10 backdrop-blur-sm" />
         </div>
-        <div className="relative z-10 container mx-auto px-4 py-6 md:py-8 max-w-4xl">
+        <div className="relative z-10 container mx-auto px-4 py-6 md:py-12 max-w-4xl">
           {/* Show validation error alert */}
           {formErrors.showErrors && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6 shadow-sm">
+            <div className="bg-white border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg mb-6 shadow-md">
               <div className="flex items-center">
-                <AlertCircle className="h-6 w-6 mr-2" />
-                <p className="font-bold">
-                  Sila lengkapkan semua maklumat yang diperlukan
-                </p>
+                <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-red-800">
+                    Sila lengkapkan semua maklumat yang diperlukan
+                  </p>
+                  <p className="text-sm mt-1 text-gray-600">
+                    Semua maklumat perlu diisi sebelum jadual lengkap guru
+                    bertugas dapat dijana.
+                  </p>
+                </div>
               </div>
-              <p className="text-sm mt-1">
-                Semua maklumat perlu diisi sebelum jadual lengkap guru bertugas
-                dapat dijana.
-              </p>
             </div>
           )}
 
-          <Card className="mb-6">
-            <div className="flex flex-col justify-center place-items-center p-4 md:p-6">
-              <Image
-                alt="SKTKP Logo"
-                src="/sktkp-logo.jpg"
-                width={100}
-                height={100}
-              />
-              <CardHeader className="pb-2 md:pb-4 -mt-4">
-                <CardTitle className="text-lg md:text-md lg:text-2xl text-center">
-                  Sistem Pengurusan Jadual Bertugas <br /> Guru{" "}
-                  <span className="bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500 text-transparent bg-clip-text">
-                    SKTKP
-                  </span>
-                </CardTitle>
-              </CardHeader>
+          {/* Header Card */}
+          <Card className="mb-8 overflow-hidden shadow-lg border-none bg-white/80 backdrop-blur-sm">
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 p-6 flex items-center justify-center">
+              <div className="bg-white rounded-full p-3 shadow-md">
+                <Image
+                  alt="SKTKP Logo"
+                  src="/sktkp-logo.jpg"
+                  width={80}
+                  height={80}
+                  className="rounded-full"
+                />
+              </div>
             </div>
+            <CardHeader className="pb-2 md:pb-4 text-center">
+              <CardTitle className="text-xl md:text-2xl lg:text-3xl font-bold">
+                Sistem Pengurusan Jadual Bertugas
+                <div className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 mt-1">
+                  Guru SKTKP
+                </div>
+              </CardTitle>
+            </CardHeader>
+          </Card>
 
-            <CardContent className="space-y-8 mt-4">
+          {/* Main Form Card */}
+          <Card className="mb-8 shadow-lg border-none bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-6 md:p-8">
               {/* Kumpulan and Week Selection */}
-              <section className="space-y-4">
-                <h3 className="text-lg md:text-xl font-semibold">
+              <section className="space-y-6 mb-8">
+                <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100">
                   Maklumat Kumpulan
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-700">
                       Kumpulan:
                       {formErrors.showErrors && formErrors.kumpulan && (
                         <span className="text-red-500 ml-1">*</span>
@@ -532,10 +518,10 @@ const DutyRosterApp: React.FC = () => {
                     </label>
                     <Input
                       type="number"
-                      className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full p-3 border rounded-lg transition-all ${
                         formErrors.showErrors && formErrors.kumpulan
                           ? "border-red-500 ring-1 ring-red-500"
-                          : ""
+                          : "border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                       }`}
                       min="1"
                       value={kumpulan}
@@ -558,7 +544,7 @@ const DutyRosterApp: React.FC = () => {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-700">
                       Minggu:
                       {formErrors.showErrors && formErrors.minggu && (
                         <span className="text-red-500 ml-1">*</span>
@@ -566,10 +552,10 @@ const DutyRosterApp: React.FC = () => {
                     </label>
                     <Input
                       type="number"
-                      className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full p-3 border rounded-lg transition-all ${
                         formErrors.showErrors && formErrors.minggu
                           ? "border-red-500 ring-1 ring-red-500"
-                          : ""
+                          : "border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                       }`}
                       min="1"
                       value={minggu}
@@ -595,14 +581,15 @@ const DutyRosterApp: React.FC = () => {
               </section>
 
               {/* Date Selection */}
-              <section className="space-y-4">
-                <h3 className="text-lg md:text-xl font-semibold">
+              <section className="space-y-6 mb-8">
+                <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100">
                   Pilih Hari dan Tarikh
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium">Hari:</label>
-
+                    <label className="block text-sm font-medium text-gray-700">
+                      Hari:
+                    </label>
                     <Select
                       value={selectedDay}
                       onValueChange={(value: DayName) => {
@@ -611,10 +598,10 @@ const DutyRosterApp: React.FC = () => {
                         }
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Guru" />
+                      <SelectTrigger className="w-full p-3 rounded-lg border-gray-200 hover:border-gray-300 transition-all">
+                        <SelectValue placeholder="Pilih Hari" />
                       </SelectTrigger>
-                      <SelectContent className="min-w-[200px]">
+                      <SelectContent className="min-w-[200px] rounded-md">
                         {dayNames.map((day) => (
                           <SelectItem key={day} value={day}>
                             {day}
@@ -624,10 +611,12 @@ const DutyRosterApp: React.FC = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium">Tarikh:</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Tarikh:
+                    </label>
                     <input
                       type="date"
-                      className="w-full p-1 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-3 border border-gray-200 hover:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
                       value={selectedDate}
                       onChange={handleDateChange}
                     />
@@ -637,7 +626,7 @@ const DutyRosterApp: React.FC = () => {
 
               {/* Duty Stations */}
               {isError && (
-                <div className="bg-red-50 text-red-700 px-4 py-3 rounded-md mb-6">
+                <div className="bg-white border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg mb-6 shadow-sm">
                   <p className="font-medium">
                     Ralat semasa memuatkan senarai guru
                   </p>
@@ -654,14 +643,20 @@ const DutyRosterApp: React.FC = () => {
                       [keyof DutyStations, DutyStation[]]
                     >
                   ).map(([section, stations]) => (
-                    <section key={section} className="space-y-4">
-                      <h3 className="text-lg md:text-xl font-semibold capitalize">
-                        {section}
+                    <section key={section} className="space-y-6 mb-8">
+                      <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
+                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center mr-2">
+                          <Calendar className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="capitalize">{section}</span>
                       </h3>
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {stations.map((station) => (
-                          <div key={station.id} className="space-y-2">
-                            <label className="block text-sm font-medium">
+                          <div
+                            key={station.id}
+                            className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all shadow-sm"
+                          >
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
                               {station.label}:
                               {formErrors.showErrors &&
                                 formErrors.stations[station.id] && (
@@ -676,12 +671,15 @@ const DutyRosterApp: React.FC = () => {
                   ))}
 
                   {/* Report Book Assignment */}
-                  <section className="space-y-4">
-                    <h3 className="text-lg md:text-xl font-semibold">
+                  <section className="space-y-6">
+                    <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
+                      <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 inline-flex items-center justify-center mr-2">
+                        <ClipboardList className="h-3.5 w-3.5" />
+                      </span>
                       Buku Laporan
                     </h3>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium">
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-purple-200 transition-all shadow-sm">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
                         Guru Bertugas:
                         {formErrors.showErrors && formErrors.reportTeacher && (
                           <span className="text-red-500 ml-1">*</span>
@@ -702,43 +700,28 @@ const DutyRosterApp: React.FC = () => {
                           disabled={isLoading}
                         >
                           <SelectTrigger
-                            className={
+                            className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
                               formErrors.showErrors && formErrors.reportTeacher
                                 ? "border-red-500 ring-1 ring-red-500"
-                                : ""
-                            }
+                                : "focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                            }`}
                           >
                             {isLoading ? (
                               <div className="flex items-center justify-center">
-                                <svg
-                                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
+                                <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
                                 <span>Memuatkan...</span>
                               </div>
                             ) : (
                               <SelectValue placeholder="Pilih Guru" />
                             )}
                           </SelectTrigger>
-                          <SelectContent className="min-w-[200px]">
+                          <SelectContent className="min-w-[200px] rounded-md shadow-md">
                             {teachers?.map((teacher) => (
-                              <SelectItem key={teacher} value={teacher}>
+                              <SelectItem
+                                key={teacher}
+                                value={teacher}
+                                className="focus:bg-purple-50"
+                              >
                                 {teacher}
                               </SelectItem>
                             ))}
@@ -756,49 +739,27 @@ const DutyRosterApp: React.FC = () => {
                 </>
               )}
 
-              <div className="pt-8 place-items-start md:place-items-center lg:place-items-end">
+              <div className="mt-10 flex justify-end">
                 <Button
-                  variant="outline"
-                  className="rounded-md text-sm md:text-base px-6 flex items-center gap-2"
-                  size="lg"
+                  className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 h-auto text-sm md:text-base flex items-center gap-2 shadow-md transition-all"
                   onClick={randomizeTeachers}
                   disabled={isLoading || isRandomizedLoading}
                 >
                   {isLoading || isRandomizedLoading ? (
                     <>
-                      <svg
-                        className="animate-spin h-4 w-4 text-gray-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
                       <span>
                         {isLoading
                           ? "Memuatkan..."
                           : isRandomizedLoading
                           ? "Dalam proses..."
                           : "Jana jadual rawak"}
-                        .
                       </span>
                     </>
                   ) : (
                     <>
-                      <Shuffle />
-                      Jana jadual rawak
+                      <Shuffle className="h-5 w-5" />
+                      <span>Jana jadual rawak</span>
                     </>
                   )}
                 </Button>
@@ -807,28 +768,26 @@ const DutyRosterApp: React.FC = () => {
           </Card>
 
           {/* Generated Message Card */}
-
-          <Card className="w-full">
-            <CardHeader className="pb-2 md:pb-4">
-              <div className="flex flex-col items-start justify-between gap-4">
-                <CardTitle className="text-lg md:text-xl">
-                  {`Jadual Bertugas Minggu ${minggu || ""} - Kumpulan ${
-                    kumpulan || ""
+          <Card className="w-full shadow-lg border-none bg-white/90 backdrop-blur-sm">
+            <CardHeader className="border-b border-gray-100 pb-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <CardTitle className="text-lg md:text-xl font-bold text-gray-800">
+                  {`Jadual Bertugas ${minggu ? `Minggu ${minggu}` : ""} ${
+                    kumpulan ? `- Kumpulan ${kumpulan}` : ""
                   }`}
                 </CardTitle>
 
-                <div className="flex flex-col w-full md:flex-row lg:flex-row gap-2 pt-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    variant="destructive"
-                    className="rounded-md text-sm md:text-base px-6"
+                    variant="outline"
+                    className="rounded-lg border-gray-200 text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2"
                     size="sm"
                     onClick={handleReset}
                   >
-                    Reset
+                    <span>Reset</span>
                   </Button>
                   <Button
-                    variant="outline"
-                    className="rounded-md text-sm md:text-base px-6 flex items-center gap-2"
+                    className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center gap-2"
                     size="sm"
                     onClick={handleCopy}
                     disabled={isFormEmpty}
@@ -845,7 +804,6 @@ const DutyRosterApp: React.FC = () => {
                       </>
                     )}
                   </Button>
-                  {/* Modified DownloadTableImage component that checks validation first */}
                   <DownloadTableImage
                     isFormEmpty={isFormEmpty}
                     onBeforeDownload={handleDownload}
@@ -853,49 +811,70 @@ const DutyRosterApp: React.FC = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <div className="table-container">
                   <table className="min-w-full bg-white table-fixed">
-                    <colgroup>
-                      <col style={{ width: "15%" }} /> {/* Waktu column */}
-                      <col style={{ width: "35%" }} /> {/* Tugasan column */}
-                      <col style={{ width: "50%" }} />{" "}
-                      {/* Guru Bertugas column */}
-                    </colgroup>
                     <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border px-4 py-2 text-left">
+                      <tr className="bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Waktu/Buku Laporan
                         </th>
-                        <th className="border px-4 py-2 text-left">Tugasan</th>
-                        <th className="border px-4 py-2 text-left">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tugasan
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Guru Bertugas
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-200">
                       {/* Pagi Section */}
                       {rosterData.pagi.map((station, index) => (
                         <tr
                           key={station.id}
-                          className={index % 2 === 0 ? "bg-gray-50" : ""}
+                          className="hover:bg-blue-50 transition-colors"
                         >
                           {index === 0 && (
                             <td
-                              className="border px-4 py-2 font-semibold waktu-cell"
+                              className="px-6 py-4 font-medium text-blue-600 align-top"
                               rowSpan={rosterData.pagi.length}
                             >
-                              📌 PAGI
+                              PAGI
                             </td>
                           )}
-                          <td className="border px-4 py-2">{station.label}</td>
-                          <td className="border px-4 py-2 truncate">
-                            {Array.isArray(station.selected)
-                              ? station.selected.filter(Boolean).length > 0
-                                ? station.selected.filter(Boolean).join(" / ")
-                                : "[Belum dipilih]"
-                              : station.selected || "[Belum dipilih]"}
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            {station.label}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            {Array.isArray(station.selected) ? (
+                              station.selected.filter(Boolean).length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {station.selected
+                                    .filter(Boolean)
+                                    .map((teacher, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                                      >
+                                        {teacher}
+                                      </span>
+                                    ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">
+                                  Belum dipilih
+                                </span>
+                              )
+                            ) : station.selected ? (
+                              <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                                {station.selected}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 italic">
+                                Belum dipilih
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -904,23 +883,48 @@ const DutyRosterApp: React.FC = () => {
                       {rosterData.rehat.map((station, index) => (
                         <tr
                           key={station.id}
-                          className={index % 2 === 0 ? "bg-gray-50" : ""}
+                          className="hover:bg-green-50 transition-colors"
                         >
                           {index === 0 && (
                             <td
-                              className="border px-4 py-2 font-semibold waktu-cell"
+                              className="px-6 py-4 font-medium text-green-600 align-top"
                               rowSpan={rosterData.rehat.length}
                             >
-                              📌 REHAT
+                              REHAT
                             </td>
                           )}
-                          <td className="border px-4 py-2">{station.label}</td>
-                          <td className="border px-4 py-2 truncate">
-                            {Array.isArray(station.selected)
-                              ? station.selected.filter(Boolean).length > 0
-                                ? station.selected.filter(Boolean).join(" / ")
-                                : "[Belum dipilih]"
-                              : station.selected || "[Belum dipilih]"}
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            {station.label}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            {Array.isArray(station.selected) ? (
+                              station.selected.filter(Boolean).length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {station.selected
+                                    .filter(Boolean)
+                                    .map((teacher, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                                      >
+                                        {teacher}
+                                      </span>
+                                    ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">
+                                  Belum dipilih
+                                </span>
+                              )
+                            ) : station.selected ? (
+                              <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                                {station.selected}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 italic">
+                                Belum dipilih
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -929,34 +933,70 @@ const DutyRosterApp: React.FC = () => {
                       {rosterData.pulang.map((station, index) => (
                         <tr
                           key={station.id}
-                          className={index % 2 === 0 ? "bg-gray-50" : ""}
+                          className="hover:bg-indigo-50 transition-colors"
                         >
                           {index === 0 && (
                             <td
-                              className="border px-4 py-2 font-semibold waktu-cell"
+                              className="px-6 py-4 font-medium text-indigo-600 align-top"
                               rowSpan={rosterData.pulang.length}
                             >
-                              📌 PULANG
+                              PULANG
                             </td>
                           )}
-                          <td className="border px-4 py-2">{station.label}</td>
-                          <td className="border px-4 py-2 truncate">
-                            {Array.isArray(station.selected)
-                              ? station.selected.filter(Boolean).length > 0
-                                ? station.selected.filter(Boolean).join(" / ")
-                                : "[Belum dipilih]"
-                              : station.selected || "[Belum dipilih]"}
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            {station.label}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium">
+                            {Array.isArray(station.selected) ? (
+                              station.selected.filter(Boolean).length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {station.selected
+                                    .filter(Boolean)
+                                    .map((teacher, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                                      >
+                                        {teacher}
+                                      </span>
+                                    ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">
+                                  Belum dipilih
+                                </span>
+                              )
+                            ) : station.selected ? (
+                              <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                                {station.selected}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 italic">
+                                Belum dipilih
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
 
-                      <tr className="bg-gray-50">
-                        <td className="border px-4 py-2 font-semibold waktu-cell">
-                          📌 BUKU LAPORAN
+                      {/* Buku Laporan */}
+                      <tr className="hover:bg-purple-50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-purple-600">
+                          BUKU LAPORAN
                         </td>
-                        <td className="border px-4 py-2">Guru Bertugas</td>
-                        <td className="border px-4 py-2 truncate">
-                          {reportTeacher || "[Belum dipilih]"}
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          Guru Bertugas
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          {reportTeacher ? (
+                            <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                              {reportTeacher}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">
+                              Belum dipilih
+                            </span>
+                          )}
                         </td>
                       </tr>
                     </tbody>
@@ -966,11 +1006,10 @@ const DutyRosterApp: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Support me by keeping this in the footer, please. :) */}
           <Footer />
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
