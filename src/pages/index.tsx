@@ -476,8 +476,7 @@ const DutyRosterApp: React.FC = () => {
       // Check if all stations have selections
       let areAllStationsValid = true;
       for (const section in rosterData) {
-        // @ts-ignore
-        for (const station of rosterData[section]) {
+        for (const station of rosterData[section as keyof DutyStations]) {
           if (station.type === "dual") {
             if (station.selected[0] === "" || station.selected[1] === "") {
               areAllStationsValid = false;

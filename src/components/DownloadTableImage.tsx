@@ -344,7 +344,7 @@ const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
       );
       allBadgesContainer.forEach((container) => {
         const spanElements = container.querySelectorAll("span");
-        spanElements.forEach((span, idx) => {
+        spanElements.forEach((span) => {
           let badgeColor = "#dbeafe"; // Default blue
           let textColor = "#1e3a8a";
 
