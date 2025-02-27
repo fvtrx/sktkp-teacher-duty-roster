@@ -63,77 +63,6 @@ const DutyRosterApp: React.FC = () => {
     }
   }, [minggu, set]);
 
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {
-      kumpulan: kumpulan.trim() === "",
-      minggu: minggu.trim() === "",
-      reportTeacher: reportTeacher === "",
-      stations: {},
-      showErrors: true,
-    };
-
-    Object.entries(rosterData).forEach((stations: DutyStation[]) => {
-      stations.forEach(({ type, selected, id }) => {
-        if (type === "dual") {
-          errors.stations[id] = [selected[0] === "", selected[1] === ""];
-        } else {
-          errors.stations[id] = selected === "";
-        }
-      });
-    });
-
-    set.formErrors(errors);
-
-    return (
-      !errors.kumpulan &&
-      !errors.minggu &&
-      !errors.reportTeacher &&
-      !Object.values(errors.stations).some((error) => {
-        if (Array.isArray(error)) {
-          return error.some((e) => e);
-        }
-        return error;
-      })
-    );
-  };
-
-  const handleTeacherSelect = (
-    section: keyof DutyStations,
-    stationId: string,
-    teacherName: string,
-    index?: number
-  ) => {
-    set.rosterData((prev) => {
-      const newData = { ...prev };
-      const station = newData[section].find((s) => s.id === stationId);
-
-      if (!station) return prev;
-
-      if (station.type === "dual" && typeof index === "number") {
-        station.selected[index] = teacherName;
-      } else if (station.type === "single") {
-        station.selected = teacherName;
-      }
-
-      return newData;
-    });
-
-    if (formErrors.showErrors) {
-      set.formErrors((prev) => {
-        const newErrors = { ...prev };
-        if (
-          typeof index === "number" &&
-          Array.isArray(newErrors.stations[stationId])
-        ) {
-          (newErrors.stations[stationId] as boolean[])[index] = false;
-        } else {
-          newErrors.stations[stationId] = false;
-        }
-        return newErrors;
-      });
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, "0");
@@ -316,6 +245,113 @@ const DutyRosterApp: React.FC = () => {
     }
   };
 
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {
+      kumpulan: kumpulan.trim() === "",
+      minggu: minggu.trim() === "",
+      reportTeacher: reportTeacher === "",
+      stations: {},
+      showErrors: true,
+    };
+
+    Object.entries(rosterData).forEach((stations: DutyStation[]) => {
+      stations.forEach(({ type, selected, id }) => {
+        if (type === "dual") {
+          errors.stations[id] = [selected[0] === "", selected[1] === ""];
+        } else {
+          errors.stations[id] = selected === "";
+        }
+      });
+    });
+
+    set.formErrors(errors);
+
+    const hasErrors =
+      errors.kumpulan ||
+      errors.minggu ||
+      errors.reportTeacher ||
+      Object.values(errors.stations).some((error) => {
+        if (Array.isArray(error)) {
+          return error.some((e) => e);
+        }
+        return error;
+      });
+
+    return !hasErrors;
+  };
+
+  const checkAndUpdateFormErrors = () => {
+    // Only check if we're showing errors (validation has failed previously)
+    if (!formErrors.showErrors) return;
+
+    // Check all required fields
+    const hasEmptyFields =
+      kumpulan.trim() === "" || minggu.trim() === "" || reportTeacher === "";
+
+    // Check if any station is empty
+    let hasEmptyStations = false;
+
+    Object.keys(rosterData).forEach((sectionKey) => {
+      const section = sectionKey as keyof DutyStations;
+      for (const station of rosterData[section]) {
+        if (station.type === "dual") {
+          if (station.selected[0] === "" || station.selected[1] === "") {
+            hasEmptyStations = true;
+            break;
+          }
+        } else if (station.selected === "") {
+          hasEmptyStations = true;
+          break;
+        }
+      }
+    });
+
+    // If all fields are filled, hide the error banner
+    if (!hasEmptyFields && !hasEmptyStations) {
+      set.formErrors((prev) => ({ ...prev, showErrors: false }));
+    }
+  };
+
+  const handleTeacherSelect = (
+    section: keyof DutyStations,
+    stationId: string,
+    teacherName: string,
+    index?: number
+  ) => {
+    set.rosterData((prev) => {
+      const newData = { ...prev };
+      const station = newData[section].find((s) => s.id === stationId);
+
+      if (!station) return prev;
+
+      if (station.type === "dual" && typeof index === "number") {
+        station.selected[index] = teacherName;
+      } else if (station.type === "single") {
+        station.selected = teacherName;
+      }
+
+      return newData;
+    });
+
+    if (formErrors.showErrors) {
+      set.formErrors((prev) => {
+        const newErrors = { ...prev };
+        if (
+          typeof index === "number" &&
+          Array.isArray(newErrors.stations[stationId])
+        ) {
+          (newErrors.stations[stationId] as boolean[])[index] = false;
+        } else {
+          newErrors.stations[stationId] = false;
+        }
+        return newErrors;
+      });
+
+      // Check if all fields are now valid after a short delay
+      setTimeout(checkAndUpdateFormErrors, 100);
+    }
+  };
+
   const renderTeacherSelect = (
     station: DutyStation,
     section: keyof DutyStations
@@ -335,6 +371,7 @@ const DutyRosterApp: React.FC = () => {
                 <SelectTrigger
                   className={`w-full transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
                     formErrors.showErrors &&
+                    formErrors.stations[station.id] &&
                     Array.isArray(formErrors.stations[station.id]) &&
                     (formErrors.stations[station.id] as boolean[])[index]
                       ? "border-red-500 ring-1 ring-red-500"
@@ -363,6 +400,7 @@ const DutyRosterApp: React.FC = () => {
                 </SelectContent>
               </Select>
               {formErrors.showErrors &&
+                formErrors.stations[station.id] &&
                 Array.isArray(formErrors.stations[station.id]) &&
                 (formErrors.stations[station.id] as boolean[])[index] && (
                   <p className="text-red-500 text-xs mt-1 flex items-center">
@@ -387,7 +425,9 @@ const DutyRosterApp: React.FC = () => {
         >
           <SelectTrigger
             className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-              formErrors.showErrors && formErrors.stations[station.id]
+              formErrors.showErrors &&
+              formErrors.stations &&
+              formErrors.stations[station.id]
                 ? "border-red-500 ring-1 ring-red-500"
                 : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
             }`}
@@ -413,15 +453,56 @@ const DutyRosterApp: React.FC = () => {
             ))}
           </SelectContent>
         </Select>
-        {formErrors.showErrors && formErrors.stations[station.id] && (
-          <p className="text-red-500 text-xs mt-1 flex items-center">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Sila pilih guru
-          </p>
-        )}
+        {formErrors.showErrors &&
+          formErrors.stations &&
+          formErrors.stations[station.id] && (
+            <p className="text-red-500 text-xs mt-1 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Sila pilih guru
+            </p>
+          )}
       </div>
     );
   };
+
+  useEffect(() => {
+    // Only run this check if we're showing errors (validation has happened)
+    if (formErrors.showErrors) {
+      // Check if all required fields have values
+      const isKumpulanValid = kumpulan.trim() !== "";
+      const isMingguValid = minggu.trim() !== "";
+      const isReportTeacherValid = reportTeacher !== "";
+
+      // Check if all stations have selections
+      let areAllStationsValid = true;
+      for (const section in rosterData) {
+        // @ts-ignore
+        for (const station of rosterData[section]) {
+          if (station.type === "dual") {
+            if (station.selected[0] === "" || station.selected[1] === "") {
+              areAllStationsValid = false;
+              break;
+            }
+          } else if (station.selected === "") {
+            areAllStationsValid = false;
+            break;
+          }
+        }
+        if (!areAllStationsValid) break;
+      }
+
+      // If everything is valid, hide the error banner
+      if (
+        isKumpulanValid &&
+        isMingguValid &&
+        isReportTeacherValid &&
+        areAllStationsValid
+      ) {
+        set.formErrors((prev) => ({ ...prev, showErrors: false }));
+      }
+    }
+    // Include all form data dependencies to ensure the effect runs on any change
+  }, [formErrors.showErrors, kumpulan, minggu, reportTeacher, rosterData, set]);
 
   return (
     <div>
@@ -484,17 +565,20 @@ const DutyRosterApp: React.FC = () => {
                 <Image
                   alt="SKTKP Logo"
                   src="/sktkp-logo.jpg"
-                  width={80}
-                  height={80}
-                  className="rounded-full"
+                  width={70}
+                  height={70}
+                  className="rounded-md"
                 />
               </div>
             </div>
             <CardHeader className="pb-2 md:pb-4 text-center">
               <CardTitle className="text-xl md:text-2xl lg:text-3xl font-bold">
                 Sistem Pengurusan Jadual Bertugas
-                <div className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 mt-1">
-                  Guru SKTKP
+                <div className=" mt-1">
+                  Guru{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500 ">
+                    SKTKP
+                  </span>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -532,6 +616,9 @@ const DutyRosterApp: React.FC = () => {
                             ...formErrors,
                             kumpulan: e.target.value.trim() === "",
                           });
+
+                          // Check if all fields are now valid after a short delay
+                          setTimeout(checkAndUpdateFormErrors, 100);
                         }
                       }}
                       placeholder="Nombor Kumpulan"
@@ -566,6 +653,9 @@ const DutyRosterApp: React.FC = () => {
                             ...formErrors,
                             minggu: e.target.value.trim() === "",
                           });
+
+                          // Check if all fields are now valid after a short delay
+                          setTimeout(checkAndUpdateFormErrors, 100);
                         }
                       }}
                       placeholder="Minggu"
@@ -616,7 +706,7 @@ const DutyRosterApp: React.FC = () => {
                     </label>
                     <input
                       type="date"
-                      className="w-full p-3 border border-gray-200 hover:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+                      className="w-full p-1 border border-gray-200 hover:border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
                       value={selectedDate}
                       onChange={handleDateChange}
                     />
@@ -695,6 +785,9 @@ const DutyRosterApp: React.FC = () => {
                                 ...formErrors,
                                 reportTeacher: value === "",
                               });
+
+                              // Check if all fields are now valid after a short delay
+                              setTimeout(checkAndUpdateFormErrors, 100);
                             }
                           }}
                           disabled={isLoading}
@@ -741,7 +834,7 @@ const DutyRosterApp: React.FC = () => {
 
               <div className="mt-10 flex justify-end">
                 <Button
-                  className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 h-auto text-sm md:text-base flex items-center gap-2 shadow-md transition-all"
+                  className="rounded-md bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 h-auto text-sm md:text-base flex items-center gap-2 shadow-md transition-all"
                   onClick={randomizeTeachers}
                   disabled={isLoading || isRandomizedLoading}
                 >
@@ -811,6 +904,7 @@ const DutyRosterApp: React.FC = () => {
                 </div>
               </div>
             </CardHeader>
+
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <div className="table-container">
@@ -840,7 +934,7 @@ const DutyRosterApp: React.FC = () => {
                               className="px-6 py-4 font-medium text-blue-600 align-top"
                               rowSpan={rosterData.pagi.length}
                             >
-                              PAGI
+                              📌 PAGI
                             </td>
                           )}
                           <td className="px-6 py-4 text-sm text-gray-700">
@@ -890,7 +984,7 @@ const DutyRosterApp: React.FC = () => {
                               className="px-6 py-4 font-medium text-green-600 align-top"
                               rowSpan={rosterData.rehat.length}
                             >
-                              REHAT
+                              📌 REHAT
                             </td>
                           )}
                           <td className="px-6 py-4 text-sm text-gray-700">
@@ -940,7 +1034,7 @@ const DutyRosterApp: React.FC = () => {
                               className="px-6 py-4 font-medium text-indigo-600 align-top"
                               rowSpan={rosterData.pulang.length}
                             >
-                              PULANG
+                              📌 PULANG
                             </td>
                           )}
                           <td className="px-6 py-4 text-sm text-gray-700">
@@ -982,7 +1076,7 @@ const DutyRosterApp: React.FC = () => {
                       {/* Buku Laporan */}
                       <tr className="hover:bg-purple-50 transition-colors">
                         <td className="px-6 py-4 font-medium text-purple-600">
-                          BUKU LAPORAN
+                          📌 BUKU LAPORAN
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-700">
                           Guru Bertugas
