@@ -7,6 +7,10 @@ import type {
 
 import DownloadTableImage from "@src/components/DownloadTableImage";
 import Footer from "@src/components/common/Footer";
+import DualTeacherSelect from "@src/components/rosters/DualTeacherSelect";
+import { DutyRosterTable } from "@src/components/rosters/DutyRosterTable";
+import RosterSection from "@src/components/rosters/RosterSection";
+import TeacherSelect from "@src/components/rosters/TeacherSelect";
 import { Button } from "@src/components/ui/button";
 import {
   Card,
@@ -22,9 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@src/components/ui/select";
-import { dayNames, initialDutyStations, months } from "@src/lib/constant";
+import { dayNames, initialDutyStations } from "@src/lib/constant";
 import { useTeacherRosterContext } from "@src/utils/context";
-import { calculateCurrentWeek } from "@src/utils/helpers/datetime";
+import { calculateCurrentWeek, formatDate } from "@src/utils/helpers/datetime";
+import { hasEmptyStation, isStationEmpty } from "@src/utils/helpers/station";
 import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
 import {
   AlertCircle,
@@ -63,14 +68,6 @@ const DutyRosterApp: React.FC = () => {
       set.minggu(currentWeek.toString());
     }
   }, [minggu, set, currentWeek]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
 
   const generateMessage = (): string => {
     const dateStr =
@@ -121,23 +118,6 @@ const DutyRosterApp: React.FC = () => {
     ];
 
     return lines.join("\n");
-  };
-
-  // Helper functions for validation
-  const isStationEmpty = (station: DutyStation): boolean | boolean[] => {
-    if (station.type === "dual") {
-      return [station.selected[0] === "", station.selected[1] === ""];
-    }
-    return station.selected === "";
-  };
-
-  const hasEmptyStation = (stations: DutyStation[]): boolean => {
-    return stations.some((station) => {
-      if (station.type === "dual") {
-        return station.selected[0] === "" || station.selected[1] === "";
-      }
-      return station.selected === "";
-    });
   };
 
   const validateForm = (): boolean => {
@@ -327,36 +307,22 @@ const DutyRosterApp: React.FC = () => {
     kumpulan === "" &&
     minggu === "";
 
-  const handleTeacherSelect = (
+  const findStation = (
+    data: DutyStations,
     section: keyof DutyStations | "pulang.tahap1" | "pulang.tahap2",
-    stationId: string,
-    teacherName: string,
-    index?: number
-  ) => {
-    set.rosterData((prev) => {
-      const newData = { ...prev };
-      let station: DutyStation | undefined;
+    stationId: string
+  ): DutyStation | undefined => {
+    if (section === "pulang.tahap1") {
+      return data.pulang.tahap1.find((s) => s.id === stationId);
+    } else if (section === "pulang.tahap2") {
+      return data.pulang.tahap2.find((s) => s.id === stationId);
+    } else if (section === "pagi" || section === "rehat") {
+      return data[section].find((s) => s.id === stationId);
+    }
+    return undefined;
+  };
 
-      // Handle nested pulang structure
-      if (section === "pulang.tahap1") {
-        station = newData.pulang.tahap1.find((s) => s.id === stationId);
-      } else if (section === "pulang.tahap2") {
-        station = newData.pulang.tahap2.find((s) => s.id === stationId);
-      } else if (section === "pagi" || section === "rehat") {
-        station = newData[section].find((s) => s.id === stationId);
-      }
-
-      if (!station) return prev;
-
-      if (station.type === "dual" && typeof index === "number") {
-        station.selected[index] = teacherName;
-      } else if (station.type === "single") {
-        station.selected = teacherName;
-      }
-
-      return newData;
-    });
-
+  const updateFormErrors = (stationId: string, index?: number) => {
     if (formErrors.showErrors) {
       set.formErrors((prev) => {
         const newErrors = { ...prev };
@@ -376,115 +342,64 @@ const DutyRosterApp: React.FC = () => {
     }
   };
 
-  const renderTeacherSelect = (
+  const handleTeacherSelect = (
+    section: keyof DutyStations | "pulang.tahap1" | "pulang.tahap2",
+    stationId: string,
+    teacherName: string,
+    index?: number
+  ) => {
+    set.rosterData((prev) => {
+      const newData = { ...prev };
+      const station = findStation(newData, section, stationId);
+
+      if (!station) return prev;
+
+      if (station.type === "dual" && typeof index === "number") {
+        station.selected[index] = teacherName;
+      } else if (station.type === "single") {
+        station.selected = teacherName;
+      }
+
+      return newData;
+    });
+
+    updateFormErrors(stationId, index);
+  };
+
+  const renderStation = (
     station: DutyStation,
     section: keyof DutyStations | "pulang.tahap1" | "pulang.tahap2"
   ) => {
     if (station.type === "dual") {
       return (
-        <div className="flex flex-col lg:flex-row gap-3">
-          {[0, 1].map((index) => (
-            <div key={index} className="flex-1">
-              <Select
-                value={station.selected[index]}
-                onValueChange={(value) =>
-                  handleTeacherSelect(section, station.id, value, index)
-                }
-                disabled={isLoading}
-              >
-                <SelectTrigger
-                  className={`w-full transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-                    formErrors.showErrors &&
-                    formErrors.stations[station.id] &&
-                    Array.isArray(formErrors.stations[station.id]) &&
-                    (formErrors.stations[station.id] as boolean[])[index]
-                      ? "border-red-500 ring-1 ring-red-500"
-                      : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                  }`}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                      <span>Memuatkan...</span>
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Pilih Guru" />
-                  )}
-                </SelectTrigger>
-                <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
-                  {teachers?.map((teacher) => (
-                    <SelectItem
-                      key={teacher}
-                      value={teacher}
-                      className="focus:bg-blue-50"
-                    >
-                      {teacher}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {formErrors.showErrors &&
-                formErrors.stations[station.id] &&
-                Array.isArray(formErrors.stations[station.id]) &&
-                (formErrors.stations[station.id] as boolean[])[index] && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Sila pilih guru
-                  </p>
-                )}
-            </div>
-          ))}
-        </div>
+        <DualTeacherSelect
+          station={station}
+          updateStation={(stationId: string, index: number, value: string) => {
+            handleTeacherSelect(section, stationId, value, index);
+          }}
+          formErrors={formErrors}
+          isLoading={isLoading}
+          teachers={teachers}
+          checkAndUpdateFormErrors={checkAndUpdateFormErrors}
+        />
       );
     }
 
     return (
       <div className="w-full lg:w-1/2">
-        <Select
+        <TeacherSelect
           value={station.selected}
           onValueChange={(value) =>
             handleTeacherSelect(section, station.id, value)
           }
-          disabled={isLoading}
-        >
-          <SelectTrigger
-            className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-              formErrors.showErrors &&
-              formErrors.stations &&
-              formErrors.stations[station.id]
-                ? "border-red-500 ring-1 ring-red-500"
-                : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-            }`}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                <span>Memuatkan...</span>
-              </div>
-            ) : (
-              <SelectValue placeholder="Pilih Guru" />
-            )}
-          </SelectTrigger>
-          <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
-            {teachers?.map((teacher) => (
-              <SelectItem
-                key={teacher}
-                value={teacher}
-                className="focus:bg-blue-50"
-              >
-                {teacher}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {formErrors.showErrors &&
-          formErrors.stations &&
-          formErrors.stations[station.id] && (
-            <p className="text-red-500 text-xs mt-1 flex items-center">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              Sila pilih guru
-            </p>
-          )}
+          isLoading={isLoading}
+          teachers={teachers}
+          hasError={
+            formErrors.showErrors &&
+            formErrors.stations &&
+            !!formErrors.stations[station.id]
+          }
+        />
       </div>
     );
   };
@@ -730,464 +645,70 @@ const DutyRosterApp: React.FC = () => {
                 </div>
               )}
 
+              {/* Teacher selection components */}
               {!isError && (
                 <>
                   {/* Render Pagi section */}
-                  <section className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center mr-2">
-                        <Calendar className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="capitalize">pagi</span>
-                    </h3>
-                    <div className="space-y-4">
-                      {rosterData.pagi.map((station) => (
-                        <div
-                          key={station.id}
-                          className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all shadow-sm"
-                        >
-                          <label className="block text-sm font-medium text-gray-700 mb-3">
-                            {station.label}:
-                            {formErrors.showErrors &&
-                              formErrors.stations[station.id] && (
-                                <span className="text-red-500 ml-1">*</span>
-                              )}
-                          </label>
-                          {renderTeacherSelect(station, "pagi")}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
+                  <RosterSection
+                    title="pagi"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    iconBgColor="bg-blue-100"
+                    iconTextColor="text-blue-600"
+                    stations={rosterData.pagi}
+                    period="pagi"
+                    formErrors={formErrors}
+                    isLoading={isLoading}
+                    teachers={teachers}
+                    renderTeacherSelect={renderStation}
+                  />
 
                   {/* Render Rehat section */}
-                  <section className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center mr-2">
-                        <Calendar className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="capitalize">rehat</span>
-                    </h3>
-                    <div className="space-y-4">
-                      {rosterData.rehat.map((station) => (
-                        <div
-                          key={station.id}
-                          className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all shadow-sm"
-                        >
-                          <label className="block text-sm font-medium text-gray-700 mb-3">
-                            {station.label}:
-                            {formErrors.showErrors &&
-                              formErrors.stations[station.id] && (
-                                <span className="text-red-500 ml-1">*</span>
-                              )}
-                          </label>
-                          {renderTeacherSelect(station, "rehat")}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
+                  <RosterSection
+                    title="rehat"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    iconBgColor="bg-blue-100"
+                    iconTextColor="text-blue-600"
+                    stations={rosterData.rehat}
+                    period="rehat"
+                    formErrors={formErrors}
+                    isLoading={isLoading}
+                    teachers={teachers}
+                    renderTeacherSelect={renderStation}
+                  />
 
                   {/* Render Pulang Tahap 1 section */}
-                  <section className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center mr-2">
-                        <Calendar className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="capitalize">pulang (Tahap 1)</span>
-                    </h3>
-                    <div className="space-y-4">
-                      {rosterData.pulang.tahap1.map((station) => (
-                        <div
-                          key={station.id}
-                          className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all shadow-sm"
-                        >
-                          <label className="block text-sm font-medium text-gray-700 mb-3">
-                            {station.label}:
-                            {formErrors.showErrors &&
-                              formErrors.stations[station.id] && (
-                                <span className="text-red-500 ml-1">*</span>
-                              )}
-                          </label>
-                          {/* Modified renderTeacherSelect to handle the nested path */}
-                          {station.type === "dual" ? (
-                            <div className="flex flex-col lg:flex-row gap-3">
-                              {[0, 1].map((index) => (
-                                <div key={index} className="flex-1">
-                                  <Select
-                                    value={station.selected[index]}
-                                    onValueChange={(value) => {
-                                      set.rosterData((prev) => {
-                                        const newData = { ...prev };
-                                        const stationObj =
-                                          newData.pulang.tahap1.find(
-                                            (s) => s.id === station.id
-                                          );
-                                        if (
-                                          stationObj &&
-                                          stationObj.type === "dual"
-                                        ) {
-                                          stationObj.selected[index] = value;
-                                        }
-                                        return newData;
-                                      });
-
-                                      if (formErrors.showErrors) {
-                                        set.formErrors((prev) => {
-                                          const newErrors = { ...prev };
-                                          if (
-                                            Array.isArray(
-                                              newErrors.stations[station.id]
-                                            )
-                                          ) {
-                                            (
-                                              newErrors.stations[
-                                                station.id
-                                              ] as boolean[]
-                                            )[index] = false;
-                                          }
-                                          return newErrors;
-                                        });
-
-                                        setTimeout(
-                                          checkAndUpdateFormErrors,
-                                          100
-                                        );
-                                      }
-                                    }}
-                                    disabled={isLoading}
-                                  >
-                                    <SelectTrigger
-                                      className={`w-full transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-                                        formErrors.showErrors &&
-                                        formErrors.stations[station.id] &&
-                                        Array.isArray(
-                                          formErrors.stations[station.id]
-                                        ) &&
-                                        (
-                                          formErrors.stations[
-                                            station.id
-                                          ] as boolean[]
-                                        )[index]
-                                          ? "border-red-500 ring-1 ring-red-500"
-                                          : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                                      }`}
-                                    >
-                                      {isLoading ? (
-                                        <div className="flex items-center justify-center">
-                                          <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                                          <span>Memuatkan...</span>
-                                        </div>
-                                      ) : (
-                                        <SelectValue placeholder="Pilih Guru" />
-                                      )}
-                                    </SelectTrigger>
-                                    <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
-                                      {teachers?.map((teacher) => (
-                                        <SelectItem
-                                          key={teacher}
-                                          value={teacher}
-                                          className="focus:bg-blue-50"
-                                        >
-                                          {teacher}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {formErrors.showErrors &&
-                                    formErrors.stations[station.id] &&
-                                    Array.isArray(
-                                      formErrors.stations[station.id]
-                                    ) &&
-                                    (
-                                      formErrors.stations[
-                                        station.id
-                                      ] as boolean[]
-                                    )[index] && (
-                                      <p className="text-red-500 text-xs mt-1 flex items-center">
-                                        <AlertCircle className="h-3 w-3 mr-1" />
-                                        Sila pilih guru
-                                      </p>
-                                    )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="w-full lg:w-1/2">
-                              <Select
-                                value={station.selected}
-                                onValueChange={(value) => {
-                                  set.rosterData((prev) => {
-                                    const newData = { ...prev };
-                                    const stationObj =
-                                      newData.pulang.tahap1.find(
-                                        (s) => s.id === station.id
-                                      );
-                                    if (
-                                      stationObj &&
-                                      stationObj.type === "single"
-                                    ) {
-                                      stationObj.selected = value;
-                                    }
-                                    return newData;
-                                  });
-
-                                  if (formErrors.showErrors) {
-                                    set.formErrors((prev) => {
-                                      const newErrors = { ...prev };
-                                      newErrors.stations[station.id] = false;
-                                      return newErrors;
-                                    });
-
-                                    setTimeout(checkAndUpdateFormErrors, 100);
-                                  }
-                                }}
-                                disabled={isLoading}
-                              >
-                                <SelectTrigger
-                                  className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-                                    formErrors.showErrors &&
-                                    formErrors.stations &&
-                                    formErrors.stations[station.id]
-                                      ? "border-red-500 ring-1 ring-red-500"
-                                      : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                                  }`}
-                                >
-                                  {isLoading ? (
-                                    <div className="flex items-center justify-center">
-                                      <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                                      <span>Memuatkan...</span>
-                                    </div>
-                                  ) : (
-                                    <SelectValue placeholder="Pilih Guru" />
-                                  )}
-                                </SelectTrigger>
-                                <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
-                                  {teachers?.map((teacher) => (
-                                    <SelectItem
-                                      key={teacher}
-                                      value={teacher}
-                                      className="focus:bg-blue-50"
-                                    >
-                                      {teacher}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {formErrors.showErrors &&
-                                formErrors.stations &&
-                                formErrors.stations[station.id] && (
-                                  <p className="text-red-500 text-xs mt-1 flex items-center">
-                                    <AlertCircle className="h-3 w-3 mr-1" />
-                                    Sila pilih guru
-                                  </p>
-                                )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
+                  <RosterSection
+                    title="pulang (Tahap 1)"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    iconBgColor="bg-blue-100"
+                    iconTextColor="text-blue-600"
+                    stations={rosterData.pulang.tahap1}
+                    period="pulang.tahap1"
+                    formErrors={formErrors}
+                    isLoading={isLoading}
+                    teachers={teachers}
+                    renderStationSelect={(station) =>
+                      renderStation(station, "pulang.tahap1")
+                    }
+                  />
 
                   {/* Render Pulang Tahap 2 section */}
-                  <section className="space-y-6 mb-8">
-                    <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center mr-2">
-                        <Calendar className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="capitalize">pulang (Tahap 2)</span>
-                    </h3>
-                    <div className="space-y-4">
-                      {rosterData.pulang.tahap2.map((station) => (
-                        <div
-                          key={station.id}
-                          className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 transition-all shadow-sm"
-                        >
-                          <label className="block text-sm font-medium text-gray-700 mb-3">
-                            {station.label}:
-                            {formErrors.showErrors &&
-                              formErrors.stations[station.id] && (
-                                <span className="text-red-500 ml-1">*</span>
-                              )}
-                          </label>
-                          {/* Similar to tahap1 but for tahap2 */}
-                          {station.type === "dual" ? (
-                            <div className="flex flex-col lg:flex-row gap-3">
-                              {[0, 1].map((index) => (
-                                <div key={index} className="flex-1">
-                                  <Select
-                                    value={station.selected[index]}
-                                    onValueChange={(value) => {
-                                      set.rosterData((prev) => {
-                                        const newData = { ...prev };
-                                        const stationObj =
-                                          newData.pulang.tahap2.find(
-                                            (s) => s.id === station.id
-                                          );
-                                        if (
-                                          stationObj &&
-                                          stationObj.type === "dual"
-                                        ) {
-                                          stationObj.selected[index] = value;
-                                        }
-                                        return newData;
-                                      });
+                  <RosterSection
+                    title="pulang (Tahap 2)"
+                    icon={<Calendar className="h-3.5 w-3.5" />}
+                    iconBgColor="bg-blue-100"
+                    iconTextColor="text-blue-600"
+                    stations={rosterData.pulang.tahap2}
+                    period="pulang.tahap2"
+                    formErrors={formErrors}
+                    isLoading={isLoading}
+                    teachers={teachers}
+                    renderStationSelect={(station) =>
+                      renderStation(station, "pulang.tahap1")
+                    }
+                  />
 
-                                      if (formErrors.showErrors) {
-                                        set.formErrors((prev) => {
-                                          const newErrors = { ...prev };
-                                          if (
-                                            Array.isArray(
-                                              newErrors.stations[station.id]
-                                            )
-                                          ) {
-                                            (
-                                              newErrors.stations[
-                                                station.id
-                                              ] as boolean[]
-                                            )[index] = false;
-                                          }
-                                          return newErrors;
-                                        });
-
-                                        setTimeout(
-                                          checkAndUpdateFormErrors,
-                                          100
-                                        );
-                                      }
-                                    }}
-                                    disabled={isLoading}
-                                  >
-                                    <SelectTrigger
-                                      className={`w-full transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-                                        formErrors.showErrors &&
-                                        formErrors.stations[station.id] &&
-                                        Array.isArray(
-                                          formErrors.stations[station.id]
-                                        ) &&
-                                        (
-                                          formErrors.stations[
-                                            station.id
-                                          ] as boolean[]
-                                        )[index]
-                                          ? "border-red-500 ring-1 ring-red-500"
-                                          : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                                      }`}
-                                    >
-                                      {isLoading ? (
-                                        <div className="flex items-center justify-center">
-                                          <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                                          <span>Memuatkan...</span>
-                                        </div>
-                                      ) : (
-                                        <SelectValue placeholder="Pilih Guru" />
-                                      )}
-                                    </SelectTrigger>
-                                    <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
-                                      {teachers?.map((teacher) => (
-                                        <SelectItem
-                                          key={teacher}
-                                          value={teacher}
-                                          className="focus:bg-blue-50"
-                                        >
-                                          {teacher}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {formErrors.showErrors &&
-                                    formErrors.stations[station.id] &&
-                                    Array.isArray(
-                                      formErrors.stations[station.id]
-                                    ) &&
-                                    (
-                                      formErrors.stations[
-                                        station.id
-                                      ] as boolean[]
-                                    )[index] && (
-                                      <p className="text-red-500 text-xs mt-1 flex items-center">
-                                        <AlertCircle className="h-3 w-3 mr-1" />
-                                        Sila pilih guru
-                                      </p>
-                                    )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="w-full lg:w-1/2">
-                              <Select
-                                value={station.selected}
-                                onValueChange={(value) => {
-                                  set.rosterData((prev) => {
-                                    const newData = { ...prev };
-                                    const stationObj =
-                                      newData.pulang.tahap2.find(
-                                        (s) => s.id === station.id
-                                      );
-                                    if (
-                                      stationObj &&
-                                      stationObj.type === "single"
-                                    ) {
-                                      stationObj.selected = value;
-                                    }
-                                    return newData;
-                                  });
-
-                                  if (formErrors.showErrors) {
-                                    set.formErrors((prev) => {
-                                      const newErrors = { ...prev };
-                                      newErrors.stations[station.id] = false;
-                                      return newErrors;
-                                    });
-
-                                    setTimeout(checkAndUpdateFormErrors, 100);
-                                  }
-                                }}
-                                disabled={isLoading}
-                              >
-                                <SelectTrigger
-                                  className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-                                    formErrors.showErrors &&
-                                    formErrors.stations &&
-                                    formErrors.stations[station.id]
-                                      ? "border-red-500 ring-1 ring-red-500"
-                                      : "focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                                  }`}
-                                >
-                                  {isLoading ? (
-                                    <div className="flex items-center justify-center">
-                                      <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                                      <span>Memuatkan...</span>
-                                    </div>
-                                  ) : (
-                                    <SelectValue placeholder="Pilih Guru" />
-                                  )}
-                                </SelectTrigger>
-                                <SelectContent className="min-w-[200px] rounded-md shadow-md border-gray-200">
-                                  {teachers?.map((teacher) => (
-                                    <SelectItem
-                                      key={teacher}
-                                      value={teacher}
-                                      className="focus:bg-blue-50"
-                                    >
-                                      {teacher}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {formErrors.showErrors &&
-                                formErrors.stations &&
-                                formErrors.stations[station.id] && (
-                                  <p className="text-red-500 text-xs mt-1 flex items-center">
-                                    <AlertCircle className="h-3 w-3 mr-1" />
-                                    Sila pilih guru
-                                  </p>
-                                )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-
+                  {/* Report Book section */}
                   <section className="space-y-6 mb-8">
                     <h3 className="text-xl font-semibold text-gray-800 pb-2 border-b border-gray-100 flex items-center">
                       <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 inline-flex items-center justify-center mr-2">
@@ -1205,58 +726,27 @@ const DutyRosterApp: React.FC = () => {
                             )}
                         </label>
                         <div className="w-full lg:w-1/2">
-                          <Select
+                          <TeacherSelect
                             value={reportTeacher}
-                            onValueChange={(value) => {
+                            onValueChange={(value: string) => {
                               set.reportTeacher(value);
                               if (formErrors.showErrors) {
                                 set.formErrors({
                                   ...formErrors,
                                   reportTeacher: value === "",
                                 });
-
-                                // Check if all fields are now valid after a short delay
                                 setTimeout(checkAndUpdateFormErrors, 100);
                               }
                             }}
-                            disabled={isLoading}
-                          >
-                            <SelectTrigger
-                              className={`transition-all border-gray-200 hover:border-gray-300 rounded-lg ${
-                                formErrors.showErrors &&
-                                formErrors.reportTeacher
-                                  ? "border-red-500 ring-1 ring-red-500"
-                                  : "focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                              }`}
-                            >
-                              {isLoading ? (
-                                <div className="flex items-center justify-center">
-                                  <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-2"></div>
-                                  <span>Memuatkan...</span>
-                                </div>
-                              ) : (
-                                <SelectValue placeholder="Pilih Guru" />
-                              )}
-                            </SelectTrigger>
-                            <SelectContent className="min-w-[200px] rounded-md shadow-md">
-                              {teachers?.map((teacher) => (
-                                <SelectItem
-                                  key={teacher}
-                                  value={teacher}
-                                  className="focus:bg-purple-50"
-                                >
-                                  {teacher}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {formErrors.showErrors &&
-                            formErrors.reportTeacher && (
-                              <p className="text-red-500 text-xs mt-1 flex items-center">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Sila pilih guru
-                              </p>
-                            )}
+                            isLoading={isLoading}
+                            teachers={teachers}
+                            hasError={
+                              formErrors.showErrors && formErrors.reportTeacher
+                            }
+                            focusColors="focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                            errorMessage="Sila pilih guru"
+                            placeholder="Pilih Guru"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1337,249 +827,11 @@ const DutyRosterApp: React.FC = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <div className="table-container">
-                  <table className="min-w-full bg-white table-fixed">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Waktu/Buku Laporan
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Tugasan
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Guru Bertugas
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {/* Pagi Section */}
-                      {rosterData.pagi.map((station, index) => (
-                        <tr
-                          key={station.id}
-                          className="hover:bg-blue-50 transition-colors"
-                        >
-                          {index === 0 && (
-                            <td
-                              className="px-6 py-4 font-medium text-blue-600 align-top"
-                              rowSpan={rosterData.pagi.length}
-                            >
-                              📌 PAGI
-                            </td>
-                          )}
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {station.label}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            {Array.isArray(station.selected) ? (
-                              station.selected.filter(Boolean).length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {station.selected
-                                    .filter(Boolean)
-                                    .map((teacher, idx) => (
-                                      <span
-                                        key={idx}
-                                        className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                                      >
-                                        {teacher}
-                                      </span>
-                                    ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">
-                                  Belum dipilih
-                                </span>
-                              )
-                            ) : station.selected ? (
-                              <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                                {station.selected}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                Belum dipilih
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-
-                      {/* Rehat Section */}
-                      {rosterData.rehat.map((station, index) => (
-                        <tr
-                          key={station.id}
-                          className="hover:bg-green-50 transition-colors"
-                        >
-                          {index === 0 && (
-                            <td
-                              className="px-6 py-4 font-medium text-green-600 align-top"
-                              rowSpan={rosterData.rehat.length}
-                            >
-                              📌 REHAT
-                            </td>
-                          )}
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {station.label}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            {Array.isArray(station.selected) ? (
-                              station.selected.filter(Boolean).length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {station.selected
-                                    .filter(Boolean)
-                                    .map((teacher, idx) => (
-                                      <span
-                                        key={idx}
-                                        className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                                      >
-                                        {teacher}
-                                      </span>
-                                    ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">
-                                  Belum dipilih
-                                </span>
-                              )
-                            ) : station.selected ? (
-                              <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                                {station.selected}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                Belum dipilih
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-
-                      {/* Pulang Tahap 1 Section */}
-                      {rosterData.pulang.tahap1.map((station, index) => (
-                        <tr
-                          key={station.id}
-                          className="hover:bg-indigo-50 transition-colors"
-                        >
-                          {index === 0 && (
-                            <td
-                              className="px-6 py-4 font-medium text-indigo-600 align-top"
-                              rowSpan={rosterData.pulang.tahap1.length}
-                            >
-                              📌 PULANG (TAHAP 1)
-                            </td>
-                          )}
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {station.label}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            {Array.isArray(station.selected) ? (
-                              station.selected.filter(Boolean).length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {station.selected
-                                    .filter(Boolean)
-                                    .map((teacher, idx) => (
-                                      <span
-                                        key={idx}
-                                        className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                                      >
-                                        {teacher}
-                                      </span>
-                                    ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">
-                                  Belum dipilih
-                                </span>
-                              )
-                            ) : station.selected ? (
-                              <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                                {station.selected}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                Belum dipilih
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-
-                      {/* Pulang Tahap 2 Section */}
-                      {rosterData.pulang.tahap2.map((station, index) => (
-                        <tr
-                          key={station.id}
-                          className="hover:bg-orange-50 transition-colors"
-                        >
-                          {index === 0 && (
-                            <td
-                              className="px-6 py-4 font-medium text-orange-600 align-top"
-                              rowSpan={rosterData.pulang.tahap2.length}
-                            >
-                              📌 PULANG (TAHAP 2)
-                            </td>
-                          )}
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {station.label}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium">
-                            {Array.isArray(station.selected) ? (
-                              station.selected.filter(Boolean).length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {station.selected
-                                    .filter(Boolean)
-                                    .map((teacher, idx) => (
-                                      <span
-                                        key={idx}
-                                        className="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                                      >
-                                        {teacher}
-                                      </span>
-                                    ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic">
-                                  Belum dipilih
-                                </span>
-                              )
-                            ) : station.selected ? (
-                              <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                                {station.selected}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 italic">
-                                Belum dipilih
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-
-                      {/* Buku Laporan */}
-                      <tr className="hover:bg-purple-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-purple-600">
-                          📌 BUKU LAPORAN
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          Guru Bertugas
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium">
-                          {reportTeacher ? (
-                            <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                              {reportTeacher}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 italic">
-                              Belum dipilih
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </CardContent>
+            {/* Table components */}
+            <DutyRosterTable
+              rosterData={rosterData}
+              reportTeacher={reportTeacher}
+            />
           </Card>
 
           <Footer />
