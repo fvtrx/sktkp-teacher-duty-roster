@@ -57,11 +57,12 @@ const DutyRosterApp: React.FC = () => {
   const { data, isLoading, isError } = useGetSenaraiGuru();
   const teachers = data?.teachers;
 
+  // Set default week if empty
   useEffect(() => {
     if (minggu === "") {
       set.minggu(currentWeek.toString());
     }
-  }, [minggu, set]);
+  }, [minggu, set, currentWeek]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -71,10 +72,6 @@ const DutyRosterApp: React.FC = () => {
     return `${day} ${month} ${year}`;
   };
 
-  // This is a partial update to the DutyRosterApp component
-  // Only showing the modified sections to handle the new pulang structure
-
-  // 1. Update the generateMessage function
   const generateMessage = (): string => {
     const dateStr =
       selectedDate && selectedDay
@@ -126,7 +123,23 @@ const DutyRosterApp: React.FC = () => {
     return lines.join("\n");
   };
 
-  // 2. Update the validateForm function
+  // Helper functions for validation
+  const isStationEmpty = (station: DutyStation): boolean | boolean[] => {
+    if (station.type === "dual") {
+      return [station.selected[0] === "", station.selected[1] === ""];
+    }
+    return station.selected === "";
+  };
+
+  const hasEmptyStation = (stations: DutyStation[]): boolean => {
+    return stations.some((station) => {
+      if (station.type === "dual") {
+        return station.selected[0] === "" || station.selected[1] === "";
+      }
+      return station.selected === "";
+    });
+  };
+
   const validateForm = (): boolean => {
     const errors: FormErrors = {
       kumpulan: kumpulan.trim() === "",
@@ -136,42 +149,18 @@ const DutyRosterApp: React.FC = () => {
       showErrors: true,
     };
 
-    // Validate pagi and rehat stations
+    // Validate all station sections
     ["pagi", "rehat"].forEach((section) => {
       rosterData[section as "pagi" | "rehat"].forEach((station) => {
-        if (station.type === "dual") {
-          errors.stations[station.id] = [
-            station.selected[0] === "",
-            station.selected[1] === "",
-          ];
-        } else {
-          errors.stations[station.id] = station.selected === "";
-        }
+        errors.stations[station.id] = isStationEmpty(station);
       });
     });
 
-    // Validate pulang.tahap1 stations
-    rosterData.pulang.tahap1.forEach((station) => {
-      if (station.type === "dual") {
-        errors.stations[station.id] = [
-          station.selected[0] === "",
-          station.selected[1] === "",
-        ];
-      } else {
-        errors.stations[station.id] = station.selected === "";
-      }
-    });
-
-    // Validate pulang.tahap2 stations
-    rosterData.pulang.tahap2.forEach((station) => {
-      if (station.type === "dual") {
-        errors.stations[station.id] = [
-          station.selected[0] === "",
-          station.selected[1] === "",
-        ];
-      } else {
-        errors.stations[station.id] = station.selected === "";
-      }
+    // Validate pulang sections
+    ["tahap1", "tahap2"].forEach((tahap) => {
+      rosterData.pulang[tahap as "tahap1" | "tahap2"].forEach((station) => {
+        errors.stations[station.id] = isStationEmpty(station);
+      });
     });
 
     set.formErrors(errors);
@@ -182,7 +171,7 @@ const DutyRosterApp: React.FC = () => {
       errors.reportTeacher ||
       Object.values(errors.stations).some((error) => {
         if (Array.isArray(error)) {
-          return error.some((e) => e);
+          return error.some(Boolean);
         }
         return error;
       });
@@ -190,53 +179,17 @@ const DutyRosterApp: React.FC = () => {
     return !hasErrors;
   };
 
-  // 3. Update the checkAndUpdateFormErrors function
   const checkAndUpdateFormErrors = () => {
-    // Only check if we're showing errors (validation has failed previously)
     if (!formErrors.showErrors) return;
 
-    // Check all required fields
     const hasEmptyFields =
       kumpulan.trim() === "" || minggu.trim() === "" || reportTeacher === "";
 
-    // Check if any station is empty
-    let hasEmptyStations = false;
-
-    // Check pagi and rehat sections (which are arrays)
-    for (const section of ["pagi", "rehat"] as Array<"pagi" | "rehat">) {
-      if (hasEmptyStations) break;
-
-      for (const station of rosterData[section]) {
-        if (station.type === "dual") {
-          if (station.selected[0] === "" || station.selected[1] === "") {
-            hasEmptyStations = true;
-            break;
-          }
-        } else if (station.selected === "") {
-          hasEmptyStations = true;
-          break;
-        }
-      }
-    }
-
-    // Check pulang.tahap1 and pulang.tahap2 sections separately
-    if (!hasEmptyStations) {
-      for (const tahap of ["tahap1", "tahap2"] as Array<"tahap1" | "tahap2">) {
-        if (hasEmptyStations) break;
-
-        for (const station of rosterData.pulang[tahap]) {
-          if (station.type === "dual") {
-            if (station.selected[0] === "" || station.selected[1] === "") {
-              hasEmptyStations = true;
-              break;
-            }
-          } else if (station.selected === "") {
-            hasEmptyStations = true;
-            break;
-          }
-        }
-      }
-    }
+    const hasEmptyStations =
+      hasEmptyStation(rosterData.pagi) ||
+      hasEmptyStation(rosterData.rehat) ||
+      hasEmptyStation(rosterData.pulang.tahap1) ||
+      hasEmptyStation(rosterData.pulang.tahap2);
 
     // If all fields are filled, hide the error banner
     if (!hasEmptyFields && !hasEmptyStations) {
@@ -244,7 +197,6 @@ const DutyRosterApp: React.FC = () => {
     }
   };
 
-  // 4. Update the randomizeTeachers function
   const randomizeTeachers = async (): Promise<void> => {
     setIsRandomizedLoading(true);
 
@@ -324,6 +276,7 @@ const DutyRosterApp: React.FC = () => {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(message);
       } else {
+        // Fallback for browsers without clipboard API
         const textArea = document.createElement("textarea");
         textArea.value = message;
         document.body.appendChild(textArea);
@@ -536,66 +489,23 @@ const DutyRosterApp: React.FC = () => {
     );
   };
 
+  // Update validation on form changes
   useEffect(() => {
-    // Only run this check if we're showing errors (validation has happened)
-    if (formErrors.showErrors) {
-      // Check if all required fields have values
-      const isKumpulanValid = kumpulan.trim() !== "";
-      const isMingguValid = minggu.trim() !== "";
-      const isReportTeacherValid = reportTeacher !== "";
+    if (!formErrors.showErrors) return;
 
-      // Check if all stations have selections
-      let areAllStationsValid = true;
+    const isAllValid = !(
+      kumpulan.trim() === "" ||
+      minggu.trim() === "" ||
+      reportTeacher === "" ||
+      hasEmptyStation(rosterData.pagi) ||
+      hasEmptyStation(rosterData.rehat) ||
+      hasEmptyStation(rosterData.pulang.tahap1) ||
+      hasEmptyStation(rosterData.pulang.tahap2)
+    );
 
-      // Check pagi and rehat sections
-      for (const section of ["pagi", "rehat"] as Array<"pagi" | "rehat">) {
-        if (!areAllStationsValid) break;
-
-        for (const station of rosterData[section]) {
-          if (station.type === "dual") {
-            if (station.selected[0] === "" || station.selected[1] === "") {
-              areAllStationsValid = false;
-              break;
-            }
-          } else if (station.selected === "") {
-            areAllStationsValid = false;
-            break;
-          }
-        }
-      }
-
-      // Check pulang.tahap1 and pulang.tahap2 sections
-      if (areAllStationsValid) {
-        for (const tahap of ["tahap1", "tahap2"] as Array<
-          "tahap1" | "tahap2"
-        >) {
-          if (!areAllStationsValid) break;
-
-          for (const station of rosterData.pulang[tahap]) {
-            if (station.type === "dual") {
-              if (station.selected[0] === "" || station.selected[1] === "") {
-                areAllStationsValid = false;
-                break;
-              }
-            } else if (station.selected === "") {
-              areAllStationsValid = false;
-              break;
-            }
-          }
-        }
-      }
-
-      // If everything is valid, hide the error banner
-      if (
-        isKumpulanValid &&
-        isMingguValid &&
-        isReportTeacherValid &&
-        areAllStationsValid
-      ) {
-        set.formErrors((prev) => ({ ...prev, showErrors: false }));
-      }
+    if (isAllValid) {
+      set.formErrors((prev) => ({ ...prev, showErrors: false }));
     }
-    // Include all form data dependencies to ensure the effect runs on any change
   }, [formErrors.showErrors, kumpulan, minggu, reportTeacher, rosterData, set]);
 
   return (
