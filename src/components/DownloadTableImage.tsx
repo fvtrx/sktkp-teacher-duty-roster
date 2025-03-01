@@ -337,7 +337,7 @@ const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
         font-size: 12px;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       `;
-      dateDiv.textContent = `Dihasilkan pada: ${formattedDateTime}`;
+      dateDiv.textContent = `Dihasilkan: ${formattedDateTime}`;
       clone.appendChild(dateDiv);
 
       // Prior to canvas conversion, make one more pass to directly style all badges
