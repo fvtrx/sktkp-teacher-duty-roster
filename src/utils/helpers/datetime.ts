@@ -1,3 +1,5 @@
+import { months } from "@src/lib/constant";
+
 /**
  * Calculates the current week number since the start of the school term (Feb 17, 2025)
  * @param {string} startDate - The start date of the school term in YYYY-MM-DD format
@@ -22,4 +24,12 @@ export const calculateCurrentWeek = (
 
   // Return 1 if the calculation results in zero or negative (meaning we're before the start date)
   return weekNumber > 0 ? weekNumber : 1;
+};
+
+export const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
 };
