@@ -66,24 +66,46 @@ export const initialDutyStations: DutyStations = {
       type: "dual",
     },
   ],
-  pulang: [
-    {
-      id: "pagarDepanPulang",
-      label: "Pagar Depan",
-      selected: ["", ""],
-      type: "dual",
-    },
-    {
-      id: "pagarBelakangPulang",
-      label: "Pagar Belakang",
-      selected: ["", ""],
-      type: "dual",
-    },
-    {
-      id: "siarayaPulang",
-      label: "Siaraya Pulang",
-      selected: ["", ""],
-      type: "dual",
-    },
-  ],
+  pulang: {
+    tahap1: [
+      {
+        id: "pagarDepanPulang1",
+        label: "Pagar Depan",
+        selected: ["", ""],
+        type: "dual",
+      },
+      {
+        id: "pagarBelakangPulang1",
+        label: "Pagar Belakang",
+        selected: ["", ""],
+        type: "dual",
+      },
+      {
+        id: "siarayaPulang1",
+        label: "Siaraya Pulang",
+        selected: "",
+        type: "single",
+      },
+    ],
+    tahap2: [
+      {
+        id: "pagarDepanPulang2",
+        label: "Pagar Depan",
+        selected: ["", ""],
+        type: "dual",
+      },
+      {
+        id: "pagarBelakangPulang2",
+        label: "Pagar Belakang",
+        selected: ["", ""],
+        type: "dual",
+      },
+      {
+        id: "siarayaPulang2",
+        label: "Siaraya Pulang",
+        selected: "",
+        type: "single",
+      },
+    ],
+  },
 };

@@ -320,10 +320,13 @@ const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
       // Add a timestamp at the bottom of the table
       const dateDiv = document.createElement("div");
       const today = new Date();
-      const formattedDate = today.toLocaleDateString("ms-MY", {
+      const formattedDateTime = today.toLocaleString("ms-MY", {
         day: "numeric",
         month: "long",
         year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
       });
 
       dateDiv.style.cssText = `
@@ -334,7 +337,7 @@ const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
         font-size: 12px;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       `;
-      dateDiv.textContent = `Dihasilkan pada: ${formattedDate}`;
+      dateDiv.textContent = `Dihasilkan pada: ${formattedDateTime}`;
       clone.appendChild(dateDiv);
 
       // Prior to canvas conversion, make one more pass to directly style all badges
