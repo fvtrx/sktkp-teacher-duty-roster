@@ -31,13 +31,32 @@ interface SectionConfig {
 const TeacherBadge: React.FC<TeacherBadgeProps> = ({
   teacher,
   colorScheme,
-}) => (
-  <span
-    className={`bg-${colorScheme}-100 text-${colorScheme}-800 text-xs font-semibold px-2.5 py-0.5 rounded-full`}
-  >
-    {teacher}
-  </span>
-);
+}) => {
+  // Instead of string interpolation, use a mapping for Tailwind classes
+  const bgColorClass = {
+    blue: "bg-blue-100",
+    green: "bg-green-100",
+    indigo: "bg-indigo-100",
+    orange: "bg-orange-100",
+    purple: "bg-purple-100",
+  }[colorScheme];
+
+  const textColorClass = {
+    blue: "text-blue-800",
+    green: "text-green-800",
+    indigo: "text-indigo-800",
+    orange: "text-orange-800",
+    purple: "text-purple-800",
+  }[colorScheme];
+
+  return (
+    <span
+      className={`${bgColorClass} ${textColorClass} text-xs font-semibold px-2.5 py-0.5 rounded-full`}
+    >
+      {teacher}
+    </span>
+  );
+};
 
 // Component to render teacher selection (for display-only table)
 const TeacherSelectionDisplay: React.FC<TeacherSelectionDisplayProps> = ({
@@ -70,34 +89,44 @@ const DutyRosterTable: React.FC<DutyRosterTableProps> = ({
   rosterData,
   reportTeacher,
 }) => {
+  const getHoverColorClass = (colorScheme: ColorScheme): string => {
+    const colorMap: Record<ColorScheme, string> = {
+      blue: "hover:bg-blue-50",
+      green: "hover:bg-green-50",
+      indigo: "hover:bg-indigo-50",
+      orange: "hover:bg-orange-50",
+      purple: "hover:bg-purple-50",
+    };
+    return colorMap[colorScheme];
+  };
   const sectionConfigs: SectionConfig[] = [
     {
       title: "PAGI",
       stations: rosterData.pagi,
       colorScheme: "blue",
-      hoverClass: "hover:bg-blue-50",
+      hoverClass: getHoverColorClass("blue"),
     },
     {
       title: "REHAT",
       stations: rosterData.rehat,
       colorScheme: "green",
-      hoverClass: "hover:bg-green-50",
+      hoverClass: getHoverColorClass("green"),
     },
     {
       title: "PULANG (TAHAP 1)",
       stations: rosterData.pulang.tahap1,
       colorScheme: "indigo",
-      hoverClass: "hover:bg-indigo-50",
+      hoverClass: getHoverColorClass("indigo"),
     },
     {
       title: "PULANG (TAHAP 2)",
       stations: rosterData.pulang.tahap2,
       colorScheme: "orange",
-      hoverClass: "hover:bg-orange-50",
+      hoverClass: getHoverColorClass("orange"),
     },
   ];
 
-  // Type-safe color mapping function for styling
+  // Type-safe color mapping functions for styling
   const getTextColorClass = (colorScheme: ColorScheme): string => {
     const colorMap: Record<ColorScheme, string> = {
       blue: "text-blue-600",
@@ -180,4 +209,4 @@ const DutyRosterTable: React.FC<DutyRosterTableProps> = ({
   );
 };
 
-export { DutyRosterTable };
+export default DutyRosterTable;

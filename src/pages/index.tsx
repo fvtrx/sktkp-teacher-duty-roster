@@ -8,7 +8,7 @@ import type {
 import DownloadTableImage from "@src/components/DownloadTableImage";
 import Footer from "@src/components/common/Footer";
 import DualTeacherSelect from "@src/components/rosters/DualTeacherSelect";
-import { DutyRosterTable } from "@src/components/rosters/DutyRosterTable";
+import DutyRosterTable from "@src/components/rosters/DutyRosterTable";
 import RosterSection from "@src/components/rosters/RosterSection";
 import TeacherSelect from "@src/components/rosters/TeacherSelect";
 import { Button } from "@src/components/ui/button";
