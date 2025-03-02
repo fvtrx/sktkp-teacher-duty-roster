@@ -6,7 +6,9 @@ import type {
 } from "@src/types";
 
 import DownloadTableImage from "@src/components/DownloadTableImage";
+import Alert from "@src/components/common/Alert";
 import Footer from "@src/components/common/Footer";
+import Header from "@src/components/common/Header";
 import DualTeacherSelect from "@src/components/rosters/DualTeacherSelect";
 import DutyRosterTable from "@src/components/rosters/DutyRosterTable";
 import RosterSection from "@src/components/rosters/RosterSection";
@@ -29,7 +31,11 @@ import {
 import { dayNames, initialDutyStations } from "@src/lib/constant";
 import { useTeacherRosterContext } from "@src/utils/context";
 import { calculateCurrentWeek, formatDate } from "@src/utils/helpers/datetime";
-import { hasEmptyStation, isStationEmpty } from "@src/utils/helpers/station";
+import {
+  findStation,
+  hasEmptyStation,
+  isStationEmpty,
+} from "@src/utils/helpers/station";
 import { useGetSenaraiGuru } from "@src/utils/hooks/get/useGetSenaraiGuru";
 import {
   AlertCircle,
@@ -307,21 +313,6 @@ const DutyRosterApp: React.FC = () => {
     kumpulan === "" &&
     minggu === "";
 
-  const findStation = (
-    data: DutyStations,
-    section: keyof DutyStations | "pulang.tahap1" | "pulang.tahap2",
-    stationId: string
-  ): DutyStation | undefined => {
-    if (section === "pulang.tahap1") {
-      return data.pulang.tahap1.find((s) => s.id === stationId);
-    } else if (section === "pulang.tahap2") {
-      return data.pulang.tahap2.find((s) => s.id === stationId);
-    } else if (section === "pagi" || section === "rehat") {
-      return data[section].find((s) => s.id === stationId);
-    }
-    return undefined;
-  };
-
   const updateFormErrors = (stationId: string, index?: number) => {
     if (formErrors.showErrors) {
       set.formErrors((prev) => {
@@ -458,50 +449,18 @@ const DutyRosterApp: React.FC = () => {
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-white/50 to-purple-500/10 backdrop-blur-sm" />
         </div>
+
         <div className="relative z-10 container mx-auto px-4 py-6 md:py-12 max-w-4xl">
           {/* Show validation error alert */}
           {formErrors.showErrors && (
-            <div className="bg-white border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg mb-6 shadow-md">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-red-800">
-                    Sila lengkapkan semua maklumat yang diperlukan
-                  </p>
-                  <p className="text-sm mt-1 text-gray-600">
-                    Semua maklumat perlu diisi sebelum jadual lengkap guru
-                    bertugas dapat dijana.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <Alert
+              title="Sila lengkapkan semua maklumat yang diperlukan"
+              description="Semua maklumat perlu diisi sebelum jadual lengkap guru bertugas dapat dijana."
+            />
           )}
 
           {/* Header Card */}
-          <Card className="mb-8 overflow-hidden shadow-lg border-none bg-white/80 backdrop-blur-sm">
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 p-6 flex items-center justify-center">
-              <div className="bg-white rounded-full p-3 shadow-md">
-                <Image
-                  alt="SKTKP Logo"
-                  src="/sktkp-logo.jpg"
-                  width={70}
-                  height={70}
-                  className="rounded-md"
-                />
-              </div>
-            </div>
-            <CardHeader className="pb-2 md:pb-4 text-center">
-              <CardTitle className="text-xl md:text-2xl lg:text-3xl font-bold">
-                Sistem Pengurusan Jadual Bertugas
-                <div className=" mt-1">
-                  Guru{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500 ">
-                    SKTKP
-                  </span>
-                </div>
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          <Header />
 
           {/* Main Form Card */}
           <Card className="mb-8 shadow-lg border-none bg-white/90 backdrop-blur-sm">
@@ -782,7 +741,6 @@ const DutyRosterApp: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Generated Message Card */}
           <Card className="w-full shadow-lg border-none bg-white/90 backdrop-blur-sm">
             <CardHeader className="border-b border-gray-100 pb-4">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -827,7 +785,6 @@ const DutyRosterApp: React.FC = () => {
               </div>
             </CardHeader>
 
-            {/* Table components */}
             <DutyRosterTable
               rosterData={rosterData}
               reportTeacher={reportTeacher}
