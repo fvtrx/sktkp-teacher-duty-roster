@@ -226,6 +226,7 @@ const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
         const greenBadges = tableElement.querySelectorAll(".bg-green-100");
         const indigoBadges = tableElement.querySelectorAll(".bg-indigo-100");
         const purpleBadges = tableElement.querySelectorAll(".bg-purple-100");
+        const orangeBadges = tableElement.querySelectorAll(".bg-orange-100");
 
         // Base badge style that looks more attractive
         const baseBadgeStyle = `
@@ -274,6 +275,15 @@ const DownloadTableImage: React.FC<DownloadTableImageProps> = ({
             ${baseBadgeStyle}
             color: #5b21b6;
             background-color: #ede9fe;
+            border: none;
+          `;
+        });
+
+        orangeBadges.forEach((badge) => {
+          (badge as HTMLElement).style.cssText = `
+            ${baseBadgeStyle}
+            color: #ea580c;
+            background-color: #ffedd5;
             border: none;
           `;
         });

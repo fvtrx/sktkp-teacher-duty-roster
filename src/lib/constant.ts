@@ -42,8 +42,8 @@ export const initialDutyStations: DutyStations = {
     {
       id: "siarayaPagi",
       label: "Siaraya Pagi",
-      selected: ["", ""],
-      type: "dual",
+      selected: "",
+      type: "single",
     },
   ],
   rehat: [
