@@ -663,7 +663,7 @@ const DutyRosterApp: React.FC = () => {
                     isLoading={isLoading}
                     teachers={teachers}
                     renderStationSelect={(station) =>
-                      renderStation(station, "pulang.tahap1")
+                      renderStation(station, "pulang.tahap2")
                     }
                   />
 
